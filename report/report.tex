@@ -1,6 +1,6 @@
 \documentclass[11pt]{article}
 
-\usepackage[english]{babel}
+\usepackage[french]{babel}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage{fullpage}
@@ -18,21 +18,21 @@
 
 \begin{document}
 
-\title{Canonical for Cubical Agda}
+\title{Canonical pour Cubical Agda}
 
 
 \author{Ewen DUFOUR\\[1ex]
-{\small Supervised by}\\ 
+{\small Supervisé par}\\ 
 {\small Pierre Boutry (IGG, ICube, Université de Strasbourg)} \\ 
 {\small Chase Norman (Carnegie Mellon University)} \\ 
 {\small Loïc Pujet (IGG, ICube, Université de Strasbourg)}}
 
-\date{March - August 2026}
+\date{Mars - Août 2026}
 
 \maketitle
 
-\pagestyle{empty} %
-\thispagestyle{empty}
+% \pagestyle{headings} %
+% \thispagestyle{empty}
 
 %% Attention: pas plus d'un recto-verso!
 % Ne conservez pas les questions
@@ -43,37 +43,111 @@ This summary should be at most one (two-sided) page.
 }
 \end{center}
 
-\subsection*{General context}
-What is the report about ? Where does the problem come from ? What is the state of the art in that area ?
+\subsection*{General context} 
+
+Interactive theorem provers ?
+Type theory -> HoTT -> CTT and Agda.
+Need for automated process in CTT -> multiple solvers ->  Mimer, Agsy  -> No solver for ctt .
+
+% What is the report about ? Where does the problem come from ? What is the state of the art in that area ?
 
 \subsection*{Research problem}
 
-What specific question(s) have you studied ?
-What motivates the question? What are its applications/consequences?
-Is it a new problem ?
-Why did you choose this problem?
+CTT being a very low level type theory, proofs can be really hard to write due to a lot of administrative stuff.
+There are multiple automated solvers for type inhabitation, but there are no satisfying solver for CTT.
+Can we use Canonical in cubical type theory proofs ? 
+
+% What specific question(s) have you studied ?
+% What motivates the question? What are its applications/consequences?
+% Is it a new problem ?
+% Why did you choose this problem?
 %If so, why are you the first researcher in the universe to consider it?
 %If not, why did you think that you could bring an original contribution?
 
 \subsection*{Your contribution}
 
-What is your answer to the research problem?
+In this work, we propose a first translation of Agda's type theory to Canonical's type theory together with a working prototype.
+We also present two approaches we have tested for Cubical stuffs.
 
-Please remain at a high level; technical details should be given in the main body of the report.
-Pay special attention to the description  of the \emph{scientific} approach.
+
+% What is your answer to the research problem?
+%
+% Please remain at a high level; technical details should be given in the main body of the report.
+% Pay special attention to the description  of the \emph{scientific} approach.
 
 \subsection*{Arguments supporting its validity}
 
-What is the evidence that your solution is a good solution?
-(Experiments? Proofs?)
+% We did multiple tests that cover a large span of cases. 
 
-Comment on the robustness of your solution: does it rely on assumptions, and if so, to what extent?
+% What is the evidence that your solution is a good solution?
+% (Experiments? Proofs?)
+%
+% Comment on the robustness of your solution: does it rely on assumptions, and if so, to what extent?
 
 \subsection*{Summary and future work}
 
-What did you contribute to the area?
-What comes next?
-What is a good \emph{next} step or question?
+% What did you contribute to the area?
+% What comes next?
+% What is a good \emph{next} step or question?
+
+\subsection*{Notes and Acknowledgment}
+
+\section{Introduction}
+Dans cette section, nous présentons le contexte dans lequel ce stage a été réalisé.
+Nous nous attardons sur la théorie des types dépendants et sa variante cubique, 
+ainsi que sur le logiciel de preuves automatisé Canonical. 
+% In this section, we present the context in which this internship take place. 
+% We focus on cubical type theory, the Agda proof assistant and the Canonical automated prover. 
+
+\subsection{La théorie des types dépendants}
+\noindent\textbf{Un système de preuves.} 
+La théorie des types dépendants est un système de preuves formelles dans lequel nous étudions des termes à travers leurs types, 
+des descriptions de leur structure.
+Une preuve au sein d'un tel système consiste en une vérification qu'un terme donné a un type donné en utilisant un ensemble de règles de typage.
+Nous notons $t : T$ pour indiquer qu'un terme $t$ est de type $T$.\\\\
+\noindent\textbf{La correspondance de Curry - Howard} 
+\\\\
+\noindent\textbf{Les assistants de preuve.}
+
+
+
+\subsection{La théorie cubique des types}
+% \noindent\textbf{A proof system.} 
+% Dependent type theory is a formal system in which we give to objects (terms) a description of its structure.
+% When given expressive enough types, a type theory can be used as a foundation for mathematics.
+% In such a system, we represent mathematical statements as types and proofs of those statements as terms that inhabit these types.\\\\
+% \noindent\textbf{A type for identification.}
+%
+% \\\\
+\noindent\textbf{Une structure explicite pour l'égalité.}
+% Cubical type theory is a type theory in which we add a special type, the interval type $I$, 
+% which have two distinguished elements $i0$ and $i1$.
+% The purpose of this interval type is to give a more low level view of the identification type. 
+% An identification between two terms $x$ and $y$ of type $A$ become a function $f:I\to A$ such that $f~i0 = x$ and $f~i1 = y$. 
+% \subsection{Agda}
+
+\subsection{Canonical}
+\noindent\textbf{Le besoin d'automatiser les preuves.} 
+
+\noindent\textbf{Un prouveur automatique pour théories des types dépendants.}
+
+\section{Traduction d'Agda vers Canonical}
+Dans cette section, nous présentons la théorie des types de Canonical ainsi qu'une version simplifiée de la théorie des types d'Agda.
+\subsection{La théorie des types de Canonical}
+\noindent\textbf{Format des types et des termes de Canonical.}
+Afin de pouvoir effectuer efficacement ses procédures de recherches, 
+Canonical utilise un unique constructeur pour décrire ses types.
+% Celui-ci se compose d'une liste de parametres, d'une liste de déclaration let, d'un symbole de tête et d'une liste d'argument : 
+% $\lambda \overline{x}.~let~\overline{y}~:=\overline{M}.~f~\overline{A}$.
+
+\subsection{La théorie des types d'Agda}
+\subsection{Traduction}
+
+\section{Adaptation pour CTT}
+\subsection{Premier essai}
+\subsection{Deuxième essai}
+
+
 
 \end{document}
 
