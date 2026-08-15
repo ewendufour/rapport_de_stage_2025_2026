@@ -190,12 +190,85 @@ et la deuxième décrit un terme (une preuve) de ce type.
 
 \section{Traduction d'Agda vers Canonical}
 Dans cette section, nous montrons comment utiliser Canonical au sein d'Agda.
-Nous présentons le fonctionnement interne d'Agda ainsi que celui de Canonical,
-et finissons sur une manière de convertir les types d'Agda vers des types de Canonical.
-
-\subsection{Agda}
+Nous présentons dans un premier temps Canonical, puis nous présentons la solution étudiée pour y faire appel depuis Agda.
+Nous finissons par présenter la manière utilisée de convertir les types d'Agda vers des types de Canonical.
 
 \subsection{Canonical}
+
+\subsection{Agda}
+\subsubsection{Fonctionnement d'Agda et appel à Canonical}
+\paragraph{Mode interactif.}
+Au-delà de vérifier les preuves qui lui sont fournies, 
+l'assistant de preuve Agda peut s'utiliser de manière interactive afin d'aider l'utilisateur à rédiger sa preuve.
+Nous pouvons spécifier à Agda que la preuve est incomplète en laissant un $?$ au sein du terme de preuve comme montré dans la figure \ref{fig:agda-proof-uncomplete}.
+De cette manière, Agda va créer un nouveau but et lui affecter le type que le terme manquant devrait avoir pour compléter la preuve.
+Par exemple, en compilant le code en figure \ref{fig:agda-proof-uncomplete}, Agda va créer le goal $0$ montré en figure \ref{fig:agda-proof-uncomplete-compiled}.
+Les termes $A$, $B$ étant implicitement introduits et le terme $imp$ explicitement introduit, Agda en déduit que le goal $0$ doit être de type $A \to B$. 
+L'utilisateur peut ainsi se placer dans le goal $0$ et écrire un terme qu'il fournira par la suite à Agda afin de compléter sa preuve.
+\begin{figure}[h]
+\centering
+\begin{minted}{agda}
+  modus-ponens : {A B : Prop} → (imp : A → B) → (a : A) → B
+  modus-ponens imp = ? 
+\end{minted}
+\caption{Preuve incomplète du modus ponens en Agda}
+\label{fig:agda-proof-uncomplete}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\begin{minted}{agda}
+  modus-ponens : {A B : Prop} → (imp : A → B) → (a : A) → B
+  modus-ponens imp = { }0
+\end{minted}
+\caption{Preuve incomplète compilée du modus ponens en Agda}
+\label{fig:agda-proof-uncomplete-compiled}
+\end{figure}
+
+\paragraph{Appel à Canonical.}
+Dans le but d'aider l'utilisateur à remplir le goal dans lequel il se trouve, 
+nous souhaitons implémenter une commande qui récupère le type du goal courant et le fourni à Canonical.
+Deux solutions ont été envisagées afin de répondre à cette problématique.
+La première solution est de passer par le langage de reflection de Agda. 
+Celui-ci permet d'écrire des tactics de résolution directement comme des termes d'Agda.
+La deuxième solution consiste à implémenter une fonction d'appel à Canonical directement dans l'assistant lui-même dans son code Haskell.
+Nous récupèrons les types des goals écrit dans la syntaxe interne des termes d'Agda puis, après une passe de transformation, 
+envoyons le type de goal à Canonical via la FFI de Haskell.
+Étant la solution en partie utilisée par Mimer et pour des raisons d'ergonomie, nous avons choisi de nous concentrer sur la deuxième solution.
+
+\subsubsection{La syntaxe interne d'Agda}
+Agda possède plusieurs syntaxes différentes pour représenter ses termes. 
+Dans notre cas, nous allons nous nous interessons à la syntaxe dite interne des termes dont une version simplifiée est montrée en figure \ref{fig:internal}.
+
+\begin{figure}[h]
+\centering
+\begin{minted}{haskell}
+data Term 
+  = Var Int [Elim]
+  | Lam ArgInfo (Abs Term)
+  | Def QName [Elim]              
+  | Con ConHead ConInfo [Elim]
+  | Pi (Dom Term) (Abs Term)  
+  | Sort Sort
+  | Level Level
+
+data Elim
+  = Apply (Arg Term)
+
+data Sort
+  = Univ Univ (Level Term)
+  | LevelUniv   
+  | IntervalUniv 
+
+data Univ
+  = UProp
+  | UType
+  | USSet
+\end{minted}
+\caption{Sous ensemble simplifié de la syntaxe interne des termes d'Agda.}
+\label{fig:internal}
+\end{figure}
+
 \subsection{Traduction}
 
 \section{Cubical Agda}
