@@ -69,7 +69,7 @@
 \subsection*{Votre contribution}
 Dans le travail réalisé lors de ce stage, nous proposons deux principales contributions.
 
-Dans un premier temps, une première implémentation de Canonical dans l'assistant de preuve Agda. 
+Dans un premier temps, une première implémentation de Canonical \cite{norman2025canonical} dans l'assistant de preuve Agda. 
 Nous présentons d'abord la syntaxe interne de Agda (sous-section 2.1) ainsi que la syntaxe de Canonical (sous-section 2.2), 
 et finissons par donner un algorithme permettant de convertir des types d'Agda vers des types de Canonical (sous-section 2.3).
 Cette contribution vient accompagnée d'un premier prototype (encore en cours de développement) permettant d'appeler Canonical directement depuis Agda.
@@ -194,6 +194,23 @@ Nous présentons dans un premier temps Canonical, puis nous présentons la solut
 Nous finissons par présenter la manière utilisée de convertir les types d'Agda vers des types de Canonical.
 
 \subsection{Canonical}
+\paragraph{Présentation générale.} 
+Canonical est un solveur pour théorie des types dépendants écrit en Rust.
+Celui fonctionne sur sa propre théorie des types ce qui lui permet, entre autre, 
+d'être totalement indépendant des assistants de preuves et de pouvoir être utilisé avec plusieurs assistant comme Rocq, Lean ou encore Agda.
+Il suffit de l'ajouter comme un plugins et de transformer les goals fourni à Canonical par l'assistant de preuve et de transformer le résultat fourni par Canonical à l'assistant de preuve.
+
+Canonical fonctionne de la manière suivante :  étant donné un type, il essaie de trouver un terme qui habite ce type en effectuant une recherche exhaustive en profondeur sur les termes.
+Le problème de l'habitation de type en théorie des types dépendants étant indécidable,
+Canonical n'est pas garanti de trouver un résultat au problème qui lui est posé.
+Son implémentation en Lean a cependant montré des performances accrue face à celle de Aesop et Duper.
+Nous avons donc décidé d'utiliser Canonical pour notre prototype en vue de l'utiliser pour la théorie cubique des types.
+
+\paragraph{Théorie des types.}
+Afin de pouvoir restreindre au maximum son arbre de recherche tout en gardant assez d'expressivité, 
+Canonical fonctionne sur sa propre théorie des types.
+
+
 
 \subsection{Agda}
 \subsubsection{Fonctionnement d'Agda et appel à Canonical}
@@ -238,7 +255,7 @@ envoyons le type de goal à Canonical via la FFI de Haskell.
 
 \subsubsection{La syntaxe interne d'Agda}
 Agda possède plusieurs syntaxes différentes pour représenter ses termes. 
-Dans notre cas, nous allons nous nous interessons à la syntaxe dite interne des termes dont une version simplifiée est montrée en figure \ref{fig:internal}.
+Dans notre cas, nous allons nous nous interessons à un sous-ensemble de la syntaxe dite interne des termes dont une version simplifiée est montrée en figure \ref{fig:internal}.
 
 \begin{figure}[h]
 \centering
@@ -280,6 +297,7 @@ data Univ
 \subsection{Premier essai}
 \subsection{Deuxième essai}
 
+\bibliography{main}
 
 
 \end{document}
