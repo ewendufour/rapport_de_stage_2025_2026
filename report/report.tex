@@ -207,10 +207,102 @@ Son implémentation en Lean a cependant montré des performances accrue face à 
 Nous avons donc décidé d'utiliser Canonical pour notre prototype en vue de l'utiliser pour la théorie cubique des types.
 
 \paragraph{Théorie des types.}
-Afin de pouvoir restreindre au maximum son arbre de recherche tout en gardant assez d'expressivité, 
-Canonical fonctionne sur sa propre théorie des types.
+Afin de pouvoir restreindre au maximum son arbre de recherche tout en gardant maximum d'expressivité, 
+Canonical fonctionne sur sa propre théorie des types que nous donnons en figure \ref{fig:canonical-tt}.
+Celle-ci possède un unique constructeur de termes composé d'une liste de parametres, d'une liste de déclaration let, 
+un symbole de tête et une liste d'arguments.
+Un type de Canonical est un terme qui possède des annotations de types sur les lieurs (let et $\lambda$).
+
+Chaque terme de Canonical doit être sous forme $\beta$-normale (aucune $\beta$-réduction au sein du terme) 
+et tout symbole d'arité $n$ doit être appliqué à exactement $n$ arguments (quitte à $\eta$-étendre les fonctions).
+Le symbole de tête du terme doit être lié par un let ou une $\lambda$-abstraction.
+
+Au sein des types, chaque annotation de type est entièrement optionnel.
+Un symbole dont le type n'est pas spécifié indique à Canonical que le symbole ne devrait pas être utilisé pour construire le terme Goal.
+
+\begin{figure}[h]
+\centering
+\begin{minipage}{0.42\textwidth}
+\centering
+
+\textbf{Types}
+\[
+X,Y,X',Y'
+::= 
+\mathrm{let}\;(\bar{x}:\bar{X}) := \bar{M}\;\mathrm{in}\;
+\Pi(\bar{y}:\bar{Y}).\,g\,\bar{B}
+\]
+
+\vspace{0.5em}
+
+\textbf{Termes}
+\[
+A,B,C
+::=
+\mathrm{let}\;\bar{x}:=\bar{M}\;\mathrm{in}\;
+\lambda\bar{y}.\,f\,\bar{A}
+\]
+
+\vspace{0.5em}
+
+\textbf{Contextes}
+\[
+\Gamma ::= \varnothing \mid \Gamma,x:\tau
+\]
+
+\end{minipage}
+\hfill
+\begin{minipage}{0.54\textwidth}
+\centering
+
+\textbf{Règles de typage des termes}
 
 
+\[
+\dfrac{f : \tau \in \Gamma}{\Gamma \vdash f : \tau} \; \text{(Symb)}
+\]
+
+\[
+\frac{
+\begin{array}{c}
+\Gamma,\bar{x}:\bar{X},\bar{y}:\bar{Y}
+\vdash
+f :
+\mathrm{let}\;(\bar{x'}:\bar{X'}) := \bar{M'}
+\;\mathrm{in}\;
+\Pi(\bar{y'}:\bar{Y'}).\,h\,\bar{C}
+\\[0.8em]
+(h\,\bar{C})
+[\bar{A}[\bar{M}/\bar{x}]/\bar{y'}]
+[\bar{M'}/\bar{x'}]
+=_{\beta}
+(g\,\bar{B})[\bar{M}/\bar{x}]
+\\[0.8em]
+\forall i,\quad
+A_i[\bar{M}/\bar{x}]
+:
+Z_i[\bar{A}[\bar{M}/\bar{x}]/\bar{y'}]
+[\bar{M'}/\bar{x'}]
+\end{array}
+}
+{
+\Gamma
+\vdash
+\mathrm{let}\;\bar{x}:=\bar{M}\;\mathrm{in}\;
+\lambda\bar{y}.\,f\,\bar{A}
+:
+\mathrm{let}\;(\bar{x}:\bar{X}):=\bar{M}
+\;\mathrm{in}\;
+\Pi(\bar{y}:\bar{Y}).\,g\,\bar{B}
+}
+\;(\mathrm{Tm})
+\]
+
+\end{minipage}
+
+\caption{Grammaire et règles de typage des termes de Canonical.}
+\label{fig:canonical-tt}
+\end{figure}
 
 \subsection{Agda}
 \subsubsection{Fonctionnement d'Agda et appel à Canonical}
