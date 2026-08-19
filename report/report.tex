@@ -46,6 +46,20 @@
 % \end{center}
 
 \subsection*{Contexte général} 
+Les assistants de preuves sont des logiciels permettant de formaliser des résultats mathématiques et 
+ainsi d'aider leurs utilisateurs à rédiger des preuves correctes. 
+Une partie des assistants de preuves tels que Rocq, Lean ou Agda passent par la théorie des types dépendants pour représenter 
+les énoncés et leurs preuves.
+Au sein de tels systèmes, un énoncé est représenté par un type et une preuve est représentée par un terme habitant ce type.
+Le problème de l'habitation de type devient donc un enjeu majeur dans le domaine de la formalisation automatisée.
+
+Plusieurs outils sont actuellement utilisés pour la recherche de preuves dans les différents assistants. 
+Cependant, aucun logiciel de recherche de preuve ne fonctionne complètement avec la théorie cubique des types, 
+qui est la théorie derrière la version cubical de Agda.
+
+Canonical \cite{norman2025canonical} est un logiciel de recherche de preuve 
+se basant sur une théorie des types dépendants dont le format est optimisé pour la recherche de termes.
+Une intégration dans l'assistant de preuve Lean a montré un intérêt pour son utilisation avec des assistants se basant sur des théories des types dépendants. 
 
 % Interactive theorem provers ?
 % Type theory -> HoTT -> CTT and Agda.
@@ -194,13 +208,14 @@ Nous présentons dans un premier temps Canonical, puis nous présentons la solut
 Nous finissons par présenter la manière utilisée de convertir les types d'Agda vers des types de Canonical.
 
 \subsection{Canonical}
-\paragraph{Présentation générale.} 
 Canonical est un solveur pour théorie des types dépendants écrit en Rust.
-Celui fonctionne sur sa propre théorie des types ce qui lui permet, entre autre, 
+Celui ci fonctionne sur sa propre théorie des types ce qui lui permet, entre autre, 
 d'être totalement indépendant des assistants de preuves et de pouvoir être utilisé avec plusieurs assistant comme Rocq, Lean ou encore Agda.
 Il suffit de l'ajouter comme un plugins et de transformer les goals fourni à Canonical par l'assistant de preuve et de transformer le résultat fourni par Canonical à l'assistant de preuve.
+Dans leurs travaux \cite{norman2025canonical}, Norman et Avigad présentent une telle implémentation de Canonical dans l'assistant de preuves Lean. 
 
-Canonical fonctionne de la manière suivante :  étant donné un type, il essaie de trouver un terme qui habite ce type en effectuant une recherche exhaustive en profondeur sur les termes.
+\paragraph{Fonctionnement.} 
+Étant donné un type, Canonical essaie de trouver un terme qui habite ce type en effectuant une recherche exhaustive en profondeur sur les termes.
 Le problème de l'habitation de type en théorie des types dépendants étant indécidable,
 Canonical n'est pas garanti de trouver un résultat au problème qui lui est posé.
 Son implémentation en Lean a cependant montré des performances accrue face à celle de Aesop et Duper.
@@ -304,6 +319,41 @@ Z_i[\bar{A}[\bar{M}/\bar{x}]/\bar{y'}]
 \label{fig:canonical-tt}
 \end{figure}
 
+\paragraph{Définitions, constantes.} 
+Canonical est capable de travailler avec des symboles constants ou encore des fonctions possèdant une définitions.
+Pour ce faire, il faut lui fournir via une déclaration let le symbole et son type.
+Il est également possible de fournir à Canonical des définitions pour ce symbole. 
+
+Par exemple, supposons que l'on souhaite travailler avec la fonction $\_+\_$ défini dans la figure \ref{fig:agda-nat}.
+Il faut donc fournir le type et la définition de $\_+\_$.
+Cependant, le type de $\_+\_$ mentionnant le type inductif des entiers naturel $\mathbb{N}$ avec l'élément $Z : \mathbb{N}$ et la fonction $S : \mathbb{N} \to \mathbb{N}$,
+il faut également fournir à Canonical le type $\mathbb{N}$ et ses symboles.
+Le goal aura donc la forme : 
+
+
+\begin{align*}
+let ..., (\mathbb{N} : Type), (Z : \mathbb{N}), (S : \Pi (\_ : \mathbb{N}).\mathbb{N}),\\
+(\_+\_ : \Pi (\_ : \mathbb{N}), (\_ : \mathbb{N}).\mathbb{N}) [zero + b = b ; suc~a + b = suc (a + b)],\\ 
+... in~T.
+\end{align*}
+
+\begin{figure}[h]
+\centering
+\begin{minted}[escapeinside=||, mathescape]{agda}
+data |$\mathbb{N}$| : Type where
+  zero : |$\mathbb{N}$|
+  suc : |$\mathbb{N} \to \mathbb{N}$|
+  
+_+_ : |$\mathbb{N} \to \mathbb{N} \to \mathbb{N}$|
+zero + b = b
+suc a + b = suc (a + b) 
+\end{minted}
+\caption{Définitions du type inductif des entiers naturel et de la fonction d'addition en Agda. }
+\label{fig:agda-nat}
+\end{figure}
+
+
+
 \subsection{Agda}
 \subsubsection{Fonctionnement d'Agda et appel à Canonical}
 \paragraph{Mode interactif.}
@@ -345,9 +395,14 @@ Nous récupèrons les types des goals écrit dans la syntaxe interne des termes 
 envoyons le type de goal à Canonical via la FFI de Haskell.
 Étant la solution en partie utilisée par Mimer et pour des raisons d'ergonomie, nous avons choisi de nous concentrer sur la deuxième solution.
 
+\subsection{Traduction}
+La théorie des types de Agda étant différente de celle de Lean, 
+nous devons adapter les techniques présentées dans \cite{norman2025canonical} pour faire notre traduction.
+
 \subsubsection{La syntaxe interne d'Agda}
-Agda possède plusieurs syntaxes différentes pour représenter ses termes. 
+Agda est basé sur la théorie des types de Martin-Löf et possède plusieurs syntaxes différentes pour représenter ses termes. 
 Dans notre cas, nous allons nous nous interessons à un sous-ensemble de la syntaxe dite interne des termes dont une version simplifiée est montrée en figure \ref{fig:internal}.
+
 
 \begin{figure}[h]
 \centering
@@ -370,15 +425,83 @@ data Sort
   | IntervalUniv 
 
 data Univ
-  = UProp
-  | UType
+  = UType
   | USSet
+
 \end{minted}
 \caption{Sous ensemble simplifié de la syntaxe interne des termes d'Agda.}
 \label{fig:internal}
 \end{figure}
 
-\subsection{Traduction}
+\subsubsection{La cible.}
+Canonical est fourni avec une couche de compatibilité permettant de faire le lien avec le coeur du prouver tout en gardant une syntaxe plus agréable à utiliser.
+La figure \ref{fig:can-comp} montre la syntaxe pour représenter les termes et les types au sein de la couche de compatibilité en syntaxe Haskell.
+
+\begin{figure}[h]
+\centering
+\begin{minted}{haskell}
+data CDecl = CDecl {
+    name :: String, 
+    typ  :: Maybe CExpr,
+    equations :: [CEquation]
+  }
+  deriving (Generic)
+
+data CEquation = CEquation
+  { lhs :: CSpine,
+    rhs :: CSpine,
+    is_redex :: Bool
+  }
+  deriving (Generic)
+
+data CExpr = CExpr
+  { params :: [CDecl],
+    lets :: [CDecl],
+    spine :: CSpine
+  }
+  deriving (Generic)
+
+data CSpine = CSpine
+  { head :: String,
+    args :: [CExpr]
+  }
+  deriving (Generic)
+
+\end{minted}
+\caption{Syntaxe de la couche de compatibilité de Canonical.}
+\label{fig:can-comp}
+\end{figure}
+
+\paragraph{CDecl.}
+Ce type décrit les déclaration de la forme $(x : A)$.
+Il est composé d'un symbole, optionnellement d'un type et d'équations.
+
+Si le champs typ n'est pas renseigné, cela peut signifier deux choses : 
+Dans le cas d'une déclaration let, ça indique à Canonical que le symbole ne devrait pas être utilisé pour construire le résultat.
+Dans le cas d'un paramettre, que l'expression a laquelle la déclaration appartient représente un terme et non pas un type.
+
+Les équations associées aux déclarations ont une interprétation qui dépendant également du champ auquel les déclarations sont associées : 
+Dans le cas d'une déclaration let, les équations représentent les règles de réductions associées au symbole (e.g. définition de fonction).
+Dans le cas d'un paramètre, elles représentent des contraintes de réduction sur ce parametre.
+
+\paragraph{CEquation.}
+Ce type représente une règle de la forme $lhs = rhs$ à travers deux spines.
+Par exemple, la déclaration associée à la fonction $not : Bool \to Bool$, définie par $not~True = False$ et $not~False = True$,
+possèdera deux équations dont les membres de gauche seront $CSpine~"not"~[trueExpr]$ (resp. $CSpine~"not"~[falseExpr]$) et les membres de droites seront
+$CSpine~"False"~[]$ (resp. $CSpine~"True"~[]$). 
+
+
+\paragraph{CExpr.}
+Ce type représente à la fois les termes et les types de Canonical que nous avons introduit en sous-section 2.1.
+La distinction entre des termes et des types se voit au sein des champs params et lets. 
+Contrairement aux types, un terme ne possèderas pas d'annotations de types dans ses champs.
+
+\paragraph{CSpine.}
+Les spines sont composées d'un symbole de tête et d'une liste d'arguments. 
+Elles représentent le corps des types / termes de Canonical.
+
+\subsection{La traduction.}
+
 
 \section{Cubical Agda}
 \subsection{La théorie cubique des types}
