@@ -201,6 +201,24 @@ et la deuxième décrit un terme (une preuve) de ce type.
 
 \subsection{La preuve automatisée.}
 
+\subsection{La théorie cubique des types}
+\paragraph{La théorie homotopique des types.}
+En mathématiques, on étudie souvent des objets à travers différentes représentations, 
+cependant les propriété internes des objets ne doivene pas dépendre de ces représentations. 
+C'est dans le but de représenter cette indépendance à la représenation que l'axiome d'univalence à été introduit.
+Celui-ci stipule qu'avoir une équivalence entre deux types est équivalent a avoir une égalité entre ces deux types.
+
+Cet axiome constitue le principal ajout de la theorie homotopique des types \cite{hottbook}(HoTT).
+Celle ci possède de nombreuses propriété : du point de vue du mathématicien, cette théorie se place comme alternative à la théorie des ensembles tout en offrant des outils puissant pour faire de l'homotopie synthetique.
+Cependant, l'ajout de l'axiome d'univalence casse la bonne propriété de constructivité de HoTT car aucune définition ne lui est associée.
+
+\paragraph{Une interprétation constructive de l'univalence.}
+Dans le but de regagner cette propriété de constructivité, la théorie cubique des types \cite{cohen2016cubical} à été introduite.
+Celle ci ajoute un nouveau type I représentant l'interval $[0; 1]$ et donne une nouvelle interprétation à l'égalité .
+Une preuve d'égalité entre deux termes $x$ et $y$ au sein d'un type $A$ est interprêtée par une fonction de l'interval vers le type $A$ qui,
+lorsque évaluée en 0 (resp. 1) doit être définitionnelement égal à x (resp. y).
+
+A notre connaissance, la seule implémentation sur un assistant de preuve répendu de la théorie cubique des types est celle fournie par Cubical Agda \cite{vezzosi2019cubical}.
 
 \section{Traduction d'Agda vers Canonical}
 Dans cette section, nous montrons comment utiliser Canonical au sein d'Agda.
@@ -400,9 +418,9 @@ La théorie des types de Agda étant différente de celle de Lean,
 nous devons adapter les techniques présentées dans \cite{norman2025canonical} pour faire notre traduction.
 
 \subsubsection{La syntaxe interne d'Agda}
-Agda est basé sur la théorie des types de Martin-Löf et possède plusieurs syntaxes différentes pour représenter ses termes. 
-Dans notre cas, nous allons nous nous interessons à un sous-ensemble de la syntaxe dite interne des termes dont une version simplifiée est montrée en figure \ref{fig:internal}.
-
+Agda possède plusieurs syntaxes différentes pour représenter ses termes. 
+Dans notre cas, nous nous interessons à un sous-ensemble de la syntaxe dite interne des termes dont une version simplifiée est montrée en figure \ref{fig:internal}.
+Le sous-ensemble en question est décrit par quatres types mutuellement récurssif représentant les termes, les sortes, les types d'univers et les eliminateurs.
 
 \begin{figure}[h]
 \centering
@@ -410,9 +428,9 @@ Dans notre cas, nous allons nous nous interessons à un sous-ensemble de la synt
 data Term 
   = Var Int [Elim]
   | Lam ArgInfo (Abs Term)
+  | Pi (Dom Term) (Abs Term)  
   | Def QName [Elim]              
   | Con ConHead ConInfo [Elim]
-  | Pi (Dom Term) (Abs Term)  
   | Sort Sort
   | Level Level
 
@@ -421,17 +439,37 @@ data Elim
 
 data Sort
   = Univ Univ (Level Term)
-  | LevelUniv   
-  | IntervalUniv 
 
 data Univ
   = UType
-  | USSet
 
 \end{minted}
 \caption{Sous ensemble simplifié de la syntaxe interne des termes d'Agda.}
 \label{fig:internal}
 \end{figure}
+
+\paragraph{Les termes.}
+Les termes sont composés des variables (indices de de Bruijn), potentiellement appliqués à divers arguments, des $\lambda$-abstractions, 
+ainsi que du type des fonctions dépendantes.
+
+Ils sont également composés des définitions (noms de fonctions, noms de datatype, etc.) et des constructeurs, pouvant aussi être appliqués à divers arguments.
+
+Enfin, les termes contiennent également les sortes et les niveaux d'univers.
+
+Dans la syntaxe réelle, les termes contiennent également d'autres constructions que nous n'aborderons pas dans ce travail.
+
+\paragraph{Les éliminateurs.}
+Au sein d'Agda, le type des éliminateurs permettent de représenter les applications de fonctions, les projections (types enregistrements) et les applications de chemin cubiques.
+Pour le moment, nous ne nous interessons qu'aux applications.
+
+
+\paragraph{Les sortes et types d'univers.}
+Pour ce stage, nous avons choisi de restreindre notre prototype qu'aux sortes en liens avec les petits univers et leurs niveaux.
+Nous expliquons ce choix par le fait que la majorité des cas testé ne présentaient pas de sortes autres que celles-ci.
+De plus, au vue de la gestion des univers par Canonical (que nous détaillerons par la suite), 
+ajouter du support pour les autres construction ne ferait qu'ajouter du bruit à la recherche de terme.
+
+
 
 \subsubsection{La cible.}
 Canonical est fourni avec une couche de compatibilité permettant de faire le lien avec le coeur du prouver tout en gardant une syntaxe plus agréable à utiliser.
@@ -501,20 +539,226 @@ Les spines sont composées d'un symbole de tête et d'une liste d'arguments.
 Elles représentent le corps des types / termes de Canonical.
 
 \subsection{La traduction.}
+Maintenant que nous avons vu le langage source et la cible, interessons nous à la traduction en elle-même.
+Notre traduction se découpe en trois fonctions mutuellement récursives pemettant de transformer des termes en déclaration $toCDecl$, en expression $toCExpr$ ou en spine $toCSpine$.
+
+\paragraph{Le point d'entrée.}
+Canonical attend pour son Goal une déclaration, notre point d'entrée est donc la fonction toCDecl dont l'implémentation en Haskell est présentée en figure \ref{fig:agda-toCDecl}.
+Celle-ci va simplement prendre un nom, un terme à convertir et un ensemble d'équations, 
+appeler la fonction toCExpr sur le terme à convertir et créer la structure CDecl correspondante.
+Les autres arguments de la fonction servent pour des processus que nous détaillerons plus tard.
+
+
+
+\begin{figure}[h]
+\centering
+\begin{minted}{haskell}
+toCDecl :: Term -> -- ^ Le terme à convertir
+           String -> -- ^ Le nom associé à la déclaration
+           [CEquation] -> -- ^ Les contraintes / définitions
+           [String] -> -- ^ Nom liés
+           [CDecl] -> -- ^ Contexte
+           Map String Bool -> -- ^ Définitions déjà rencontrées
+           Bool -> -- ^ En train de transformer la déclaration "Goal"?
+           TCM (CDecl, [CDecl], Map String Bool)
+toCDecl t name eqs bindnames lets ald tplvl = do
+  toCExpr t bindnames [] lets ald tplvl True
+\end{minted}
+\caption{Traduction des termes en CDecl.}
+\label{fig:agda-toCDecl}
+\end{figure}
+
+\subsubsection{Conversion en termes de Canonical}
+La fonction toCExpr a pour but premier de créer la liste de parametre qu'il y a dans un terme / type de Canonical.
+Pour ce faire, la fonction parcours le terme en gardant en mémoire les paramètres créés jusqu'à ce qu'elle rencontre un terme qui ne créé pas de paramètres.
+
+\paragraph{Termes créant des paramètres.}
+Il y deux constructeurs qui se traduisent en termes de Canonical : Lam et Pi.
+Dans le cas de Lam, il suffit d'ajouter une déclaration contenant seulement le nom de la variable à la liste des paramètres et de s'appeler récursivement sur le terme sous jacent.
+Dans le cas de Pi, il faut distinguer deux cas : 
+Si nous sommes en train de convertir le terme vers un type, il suffit de convertir le domaine du Pi vers une CDecl, 
+de l'ajouter au paramètres et d'appeler récursivement toCExpr sur le codomaine.
+Si nous sommes en train de convertir vers un terme, il faut traduire le termes avec le procédé décrit dans la section 4.1 de \cite{norman2025canonical}.
+Cette fonctionnalité n'a pas encore été implémentée dans notre prototype.
+La distinction entre traduction vers termes ou type se fait en fonction de la fonction appelant toCExpr : 
+Si c'est toCDecl qui l'appelle, cela signifie que nous somme en train de convertir effectivement un type.
+Dans le cas contraire, c'est que la fonction a été appelée par toCSpine et que nous sommes en train de convertir des arguments de fonctions, donc des termes.
+
+\paragraph{Autres constructeurs.}
+Dans le cas ou toCExpr est appelé sur d'autre constructeur que Pi et Lam, cela signifie que tous les paramètres ont été dépliés.
+Il faut donc convertir le termes vers une spine (constructeur de tête et arguments) et créer la CExpr en mettant les paramètres avec la spine.
+
+Un point que nous n'avons pas encore abordé concerne la gestion du contexte du Goal.
+Celui-ci sert à mettre tout ce qui est en lien avec les constantes, les fonctions externes, les datatypes et les constructeurs.
+Notre stratégie consite à mettre tout cet environnement sur l'expression correspondant au type du goal. 
+L'environnement se construisant tout au long de la conversion du terme, nous devons le garder en mémoire et l'ajouter qu'à la toute fin de la traduction,
+après avoir converti la spine du goal.
+Nous détaillerons la construction de l'environnement par la suite.
+
+\subsubsection{Conversion en spine.}
+La fonction toCSpine sert à convertir les termes de Agda vers un symboles de tête et ses potentiels arguments.
+Étant seulement appellée par la fonction toCExpr après avoir déplié tous les Pi et Lam, il nous suffit de seulement traiter les variables, les sortes, les niveaux d'univers, les constructeurs et les définitions.
+Pour rappel, les CSpine sont constitué d'un symboles de tête (représenté par une chaîne de caractères) et d'une liste d'arguments (liste de CExpr).
+
+\paragraph{Les variables.}
+Dans la syntaxe interne de Agda, une variable est représentée par un indice de de Bruijn et une liste d'éliminateurs.
+Ayant restreints les éliminateurs aux applications pour le moment, nous obtenons un termes déjà très proche d'une spine.
+Il nous suffit donc de convertir la liste d'éliminateurs en transformant chaque termes de la liste en CExpr, 
+puis de construire la spine en mettant le nom associé à l'indice de de Bruijn avec les arguments convertis.
+
+\paragraph{Les définitions et constructeurs.}
+Les termes Def correspondent aux symboles étant rattachés à une définition comme les axiomes (introduits avec le mot clé postulate en Agda), 
+les fonctions définies par l'utilisateurs, le fonctions primitive ou encore les datatypes.
+Pour le moment notre protoype ne gère pleinement que les cas ou la définition correspond à un datatype ou un constructeurs, 
+cependant nous pensons que la technique présenté peut-être facilement adaptée pour gérer les autres cas.
+
+Lorsque l'en rencontre un symbole correspondant a un datatype, 
+on récupère le terme correspondant au type de ce datatype et on ajoute au contexte une déclaration contenant le symbole et le termes converti en CExpr.
+On récupère par la suite la liste des constructeurs associés à ce datatype et on les ajoutes également au contexte via un procédé similaire.
+
+Si on voulait convertir un symbole possèdant une définition (comme une fonction définie par l'utilisateur), 
+il suffirait de récupérer les différentes clauses de cette fonction et de les convertir en CEquations.
+N'ayant pas effectuer cette implémentation pour le moment, nous ne détaillerons pas plus ce procédé.
+
+\paragraph{Les univers et leurs niveaux.}
+Comme indiqué dans \cite{norman2025canonical}, Canonical ne gère pas les niveaux d'univers.
+Nous fournissons donc simplement à Canonical un objet \textbf{Type} ne possèdant pas de type dans son contexte.
+De cette manière, Canonical n'essaiera pas de typer les éléments de type Type et n'utiliseras pas Type pour construire ses termes.
 
 
 \section{Cubical Agda}
-\subsection{La théorie cubique des types}
-\paragraph{La théorie homotopique des types.}
-\paragraph{Une interprétation constructive de l'univalence.}
-\paragraph{Cubical Agda}
+Maintenant que nous avons un protoype fonctionnant pour les fonctionnalités basiques de Agda, 
+nous nous intéressons à son application pour la théorie cubique des types.
 
-\subsection{Premier essai}
+\paragraph{Le type interval.}
+La première étape vers l'utilisation de Canonical pour la théorie cubique des types est le support de l'algèbre de de Morgan libre de l'interval.
+Nous ajoutons donc au contexte que nous fournissons à Canonical trois déclarations $(I : \_)$, $(i0 : I)$ et $(i1 : I)$, 
+représentant respectivement le type interval, l'élément 0 et l'élément 1. 
+
+Nous ajoutons également des déclarations pour les fonctions suivantes :
+$(primINeg : I \to I) {primINeg i0 = i1; primINeg i1 = i0; primINeg (primIMax i j) = primIMin (primINeg i) (primINeg j); primINeg (primIMin i j) = primIMax (primINeg i) (primINeg j)}$ 
+
+$(primIMin : I \to I \to I) {primIMin i0 j = i0; primIMin i1 j = j; primIMin j i0 = i0; primIMin j i1 = j}$ 
+
+$(primIMax : I \to I \to I) {primIMax i0 j = j; primIMax i1 j = i1; primIMax j i0 = j; primIMax j i1 = i1}$ 
+
+A présent que nous avons une représentation du type interval, nous nous interessons à la gestion des types d'égalité (aussi appelé path type dans CTT).
+
+\subsection{Première représentation des path types}
+La première voie que nous avons explorer pour représenter les path type passe par l'utilisation d'un constructeur et d'un destructeur pour les paths type.
+Pour ce faire, nous ajoutons au contexte de Canonical un constructeur 
+$makePath : (\ell : Level) \to (A : Type \ell) \to (x : A) \to (y : A) \to (p : I \to A){p i0 = x; p i1 = y} \to x \equiv y$ 
+ainsi qu'un destructeur 
+$destructPath : (\ell : Level) \to (A : Type \ell) \to (x : A) \to (y : A) \to (p : x \equiv y) \to (i : I) \to A$
+avec les règles de réduction :
+$destructPath \ell A x y p i0 = x$ et 
+$destructPath \ell A x y p i1 = y$.
+
+Le constructeur sert a forcer Canonical a fournir une fonction $p : I \to A$ avec les bonnes extrémité comme témoin pour justifier une égalité.
+et le destructeur sert à imiter le comportement d'un path type.
+
+
+
 \subsection{Deuxième essai}
 
 \bibliography{main}
 
 
+\begin{figure}[h]
+\centering
+\begin{minted}{haskell}
+toCExpr :: Term -> -- ^ Le terme à convertir
+           [String] -> -- ^ Variables liées
+           [CDecl] -> -- ^ Paramètres
+           [CDecl] -> -- ^ Contexte
+           Map String Bool -> -- ^ already seen constructors / definitions
+           Bool -> -- ^ En train de convertir le Goal ?
+           Bool -> -- ^ En train de convertir vers un type ?
+           TCM (CExpr, [CDecl], Map String Bool)
+toCExpr t bindnames pidecl letdecl ald tplvl totyp =
+  case t of
+    Pi a b -> do
+      (newnames, na) <- do case b of
+                            NoAbs _ _ -> return (bindnames, "_")
+                            Abs n _ -> do
+                              n' <- freshString n
+                              return (n' : bindnames, n')
+      (domdecl, lets, ald) <- toCDecl (unEl $ unDom a) na [] bindnames letdecl ald False
+      toCExpr (unEl $ unAbs b) newnames (domdecl : pidecl) lets ald tplvl totyp
+    Lam a b -> do
+      let (newnames, name) = case b of
+                      NoAbs _ _ -> (bindnames, "_")
+                      Abs n _ -> (n : bindnames, n)
+      toCExpr (unAbs b) newnames (CDecl name Nothing [] : pidecl ) letdecl ald tplvl False
+    _ -> do
+      (spine, lets, ald) <- toCSpine t bindnames letdecl ald
+      return $ (
+        CExpr {
+            params = reverse pidecl,
+            lets = if tplvl then reverse lets else [],
+            spine
+          }, lets, ald)
+
+\end{minted}
+\caption{Traduction des termes en CExpr.}
+\label{fig:agda-toCExpr}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\begin{minted}{haskell}
+toCSpine :: Term -> -- ^ The term to convert
+            [String] -> -- ^ Bound names
+            [CDecl] -> -- ^ Context
+            Map String Bool -> -- ^ Already seen constructors / datatypes
+            TCM (CSpine, [CDecl], Map String Bool)
+toCSpine t bindnames lets ald =
+  case t of
+    Var i el -> do
+      (args, lets, ald) <- elimsToCExpr el bindnames lets ald
+      return $ (
+        CSpine {
+          head = bindnames !! i,
+          args  
+         }, lets, ald)
+    Sort (Type l) -> do
+      t' <- reallyUnLevelView l
+      (arg, lets, ald) <- toCExpr t' bindnames [] lets ald False False
+      return $ (
+        CSpine {
+          head = "Type",
+          args = [arg]
+        }, lets, ald)
+    Level l -> do
+      t' <- reallyUnLevelView l
+      toCSpine t' bindnames lets ald
+
+    Def qname e -> do
+      (args, lets, ald) <- elimsToCExpr e bindnames lets ald
+      (lets, ald) <- gatherDatatypeInformations qname bindnames lets ald
+      return $ (
+        CSpine {
+          head = P.prettyShow (qnameName qname),
+          args
+        }, lets, ald)
+
+    Con hd _ e -> do
+      infos <- getConstInfo (conName hd)
+      let dataname = case theDef infos of
+                    ConstructorDefn cd -> _conData cd
+                    _ -> __IMPOSSIBLE__
+      (args, lets, ald) <- elimsToCExpr e bindnames lets ald
+      (lets, ald) <- gatherDatatypeInformations dataname bindnames lets ald
+      return $ (
+        CSpine {
+          head = P.prettyShow . qnameName $ conName hd,
+          args
+        }, lets, ald)
+
+\end{minted}
+\caption{Fonction de conversion des termes en CSpine.}
+\label{fig:agda-toCSpine}
+\end{figure}
 \end{document}
 
 
