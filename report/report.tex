@@ -51,7 +51,7 @@
 \subsection*{Contexte général} 
 Les assistants de preuves sont des logiciels permettant de formaliser des résultats mathématiques et 
 ainsi d'aider leurs utilisateurs à rédiger des preuves correctes. 
-Certains assistants de preuves, tels que Rocq \cite{rocq}, Lean \cite{demoura2021lean4} ou Agda \cite{norell2008agda}, 
+Certains assistants à la preuve, tels que Rocq \cite{rocq}, Lean \cite{demoura2021lean4} ou Agda \cite{norell2008agda}, 
 s'appuient sur la théorie des types dépendants pour représenter les énoncés mathématiques et leurs preuves.
 Au sein de ces systèmes, un énoncé est représenté par un type, tandis qu'une preuve est représentée par un terme habitant ce type.
 Le problème de l'habitation des types constitue donc un enjeu majeur dans le domaine de la formalisation automatisée.
@@ -92,7 +92,7 @@ en vue de son utilisation avec la théorie cubique des types.
 \subsection*{Votre contribution}
 Dans le cadre du travail réalisé au cours de ce stage, nous proposons deux contributions principales.
 
-Dans un premier temps, nous présentons une première intégration de Canonical dans l’assistant de preuve Agda. 
+Dans un premier temps, nous présentons une intégration de Canonical dans l’assistant à preuve Agda. 
 Nous présentons d’abord Canonical (sous-section 2.1), ainsi qu’Agda (sous-section 2.2), 
 avant de donner un algorithme permettant de convertir des types d’Agda en types de Canonical (sous-section 2.4). 
 Cette contribution s’accompagne d’un premier prototype\footnote{Le prototype est disponible sur ce dépôt GitHub : \url{https://github.com/Unistra-Preuves/agda.git}}, 
@@ -134,13 +134,13 @@ et se sont révélés prometteurs quant à l’approche finale que nous présent
 Le travail réalisé au cours de ce stage constitue une preuve de concept pour l’automatisation de la recherche de preuves en théorie cubique des types.
 Nous y proposons deux contributions principales. 
 La première consiste en une intégration partielle du logiciel de recherche de preuves Canonical au sein de l’assistant de preuves Agda. 
-Nous nous sommes notamment intéressés à la conversion des types d’Agda, représentés selon leur syntaxe interne, 
+Nous nous sommes intéressés à la conversion des types d’Agda, représentés selon leur syntaxe interne, 
 afin de pouvoir fournir des buts à Canonical via sa couche de compatibilité.
 Dans un second temps, nous nous sommes appuyés sur l’intégration présentée dans la première partie afin d’automatiser certaines preuves en théorie cubique des types. 
 Cette automatisation repose notamment sur un encodage des types de chemins et des contraintes de cohérence associées à leurs extrémités.
 
 Dans le cadre de travaux futurs, nous souhaiterions dans un premier temps améliorer l’utilisabilité de Canonical au sein d’Agda. 
-Cela passerait notamment par la possibilité de récupérer automatiquement les définitions de fonctions afin de les transformer en équations qui seraient ensuite fournies à Canonical, 
+Cela passerait par la possibilité de récupérer automatiquement les définitions de fonctions afin de les transformer en équations qui seraient ensuite fournies à Canonical, 
 par la gestion du pattern matching d’Agda, ainsi que par différentes corrections de bugs et améliorations de l’interface utilisateur.
 
 Dans un second temps, nous souhaiterions poursuivre l’étude des différentes manières d’encoder la théorie cubique des types et ses spécificités au sein d’autres théories des types, 
@@ -931,7 +931,6 @@ Comme indiqué dans \cite{norman2025canonical}, Canonical ne gère pas les nivea
 Nous fournissons donc simplement à Canonical un objet \textbf{Type} ne possédant pas de type dans son contexte.
 De cette manière, Canonical n'essaiera pas de typer les éléments de type \texttt{Type} et n'utiliseras pas \texttt{Type} pour construire ses termes.
 
-
 \section{Cubical Agda}
 Maintenant que nous avons un prototype pour les fonctions basiques de Agda, 
 nous nous intéressons à son application pour la théorie cubique des types.
@@ -1120,15 +1119,15 @@ invSides-filler {x = x} p q i j =
 \end{figure}
 
 \section{Conclusion et travaux futurs}
-Nous repètons ici ce qui est présenté dans la sous-section éponyme présente au début de ce rapport.
+Nous rappelons ici ce qui est présenté dans la sous-section éponyme présente au début de ce rapport.
 
 Le travail réalisé au cours de ce stage constitue une preuve de concept pour l’automatisation de la recherche de preuves en théorie cubique des types.
 Nous y proposons deux contributions principales. 
 La première consiste en une intégration partielle du logiciel de recherche de preuves Canonical au sein de l’assistant de preuves Agda. 
-Nous nous sommes notamment intéressés à la conversion des types d’Agda, représentés selon leur syntaxe interne, 
+Nous nous sommes intéressés à la conversion des types d’Agda, représentés selon leur syntaxe interne, 
 afin de pouvoir fournir des buts à Canonical via sa couche de compatibilité.
 Dans un second temps, nous nous sommes appuyés sur l’intégration présentée dans la première partie afin d’automatiser certaines preuves en théorie cubique des types. 
-Cette automatisation repose notamment sur un encodage des types de chemins et des contraintes de cohérence associées à leurs extrémités.
+Cette automatisation repose sur un encodage des types de chemins et des contraintes de cohérence associées à leurs extrémités.
 
 Dans le cadre de travaux futurs, nous souhaiterions dans un premier temps améliorer l’utilisabilité de Canonical au sein d’Agda. 
 Cela passerait notamment par la possibilité de récupérer automatiquement les définitions de fonctions afin de les transformer en équations qui seraient ensuite fournies à Canonical, 
