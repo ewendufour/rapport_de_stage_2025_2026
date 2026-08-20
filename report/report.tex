@@ -4,7 +4,7 @@
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage{fullpage}
-
+% \usepackage{hyperref}
 \usepackage{amsmath, amssymb}
 \usepackage{xcolor}
 \usepackage{minted}
@@ -51,18 +51,16 @@
 \subsection*{Contexte général} 
 Les assistants de preuves sont des logiciels permettant de formaliser des résultats mathématiques et 
 ainsi d'aider leurs utilisateurs à rédiger des preuves correctes. 
-Une partie des assistants de preuves tels que Rocq, Lean ou Agda passent par la théorie des types dépendants pour représenter 
-les énoncés et leurs preuves.
-Au sein de tels systèmes, un énoncé est représenté par un type et une preuve est représentée par un terme habitant ce type.
-Le problème de l'habitation de type devient donc un enjeu majeur dans le domaine de la formalisation automatisée.
-
-% Plusieurs outils sont actuellement utilisés pour la recherche de preuves dans les différents assistants. 
-% Cependant, aucun logiciel de recherche de preuve ne fonctionne complètement avec la théorie cubique des types, 
-% qui est la théorie derrière la version cubical de Agda.
+Certains assistants de preuves, tels que Rocq \cite{rocq}, Lean \cite{demoura2021lean4} ou Agda \cite{norell2008agda}, 
+s'appuient sur la théorie des types dépendants pour représenter les énoncés mathématiques et leurs preuves.
+Au sein de ces systèmes, un énoncé est représenté par un type, tandis qu'une preuve est représentée par un terme habitant ce type.
+Le problème de l'habitation des types constitue donc un enjeu majeur dans le domaine de la formalisation automatisée.
 
 Canonical \cite{norman2025canonical} est un logiciel de recherche de preuve 
 se basant sur une théorie des types dépendants dont le format est optimisé pour la recherche de termes.
-Une intégration dans l'assistant de preuve Lean a montré un intérêt pour son utilisation avec des assistants se basant sur des théories des types dépendants. 
+Son intégration dans l’assistant de preuve Lean a montré que cette approche 
+s’intègre particulièrement bien aux assistants de preuves fondés sur la théorie des types dépendants. 
+Elle présente notamment des performances supérieures à celles des autres logiciels de recherche de preuves disponibles dans Lean.
 
 % Interactive theorem provers ?
 % Type theory -> HoTT -> CTT and Agda.
@@ -71,13 +69,14 @@ Une intégration dans l'assistant de preuve Lean a montré un intérêt pour son
 % What is the report about ? Where does the problem come from ? What is the state of the art in that area ?
 
 \subsection*{Problématique de recherche}
-La théorie cubique des types étant une théorie des types très bas niveau, 
-les preuves que l'on y fait requiers parfois de nombreuses étapes administratives.
+La théorie cubique des types\cite{cohen2016cubical} étant une théorie des types de bas niveau, 
+les preuves qui y sont réalisées requièrent parfois de nombreuses étapes administratives.
 
-Il existe de nombreux logiciels de preuves automatisée se basant sur différentes théories,
-cependant il n'existe pour l'instant aucune intégration pleinement satisfaisante de ceux-ci dans la théorie cubique des types.
+Il existe de nombreux logiciels de recherche de preuves automatisée reposant sur différentes théories des types. 
+Cependant, il n’existe pour l’instant aucune intégration pleinement satisfaisante de ces logiciels dans la théorie cubique des types.
 
-Ce travail a pour but de proposer une intégration du logiciel Canonical dans l'assistant de preuve Agda en vue de l'utiliser pour la théorie cubique des types.
+Ce travail a pour objectif de proposer une intégration du logiciel Canonical dans l’assistant de preuve Agda, 
+en vue de son utilisation avec la théorie cubique des types.
 
 % CTT being a very low level type theory, proofs can be really hard to write due to a lot of administrative stuff.
 % There are multiple automated solvers for type inhabitation, but there are no satisfying solver for CTT.
@@ -91,16 +90,19 @@ Ce travail a pour but de proposer une intégration du logiciel Canonical dans l'
 %If not, why did you think that you could bring an original contribution?
 
 \subsection*{Votre contribution}
-Dans le travail réalisé lors de ce stage, nous proposons deux principales contributions.
+Dans le cadre du travail réalisé au cours de ce stage, nous proposons deux contributions principales.
 
-Dans un premier temps, une première implémentation de Canonical \cite{norman2025canonical} dans l'assistant de preuve Agda. 
-Nous présentons d'abord la syntaxe interne de Agda (sous-section 2.1) ainsi que la syntaxe de Canonical (sous-section 2.2), 
-et finissons par donner un algorithme permettant de convertir des types d'Agda vers des types de Canonical (sous-section 2.3).
-Cette contribution vient accompagnée d'un premier prototype (encore en cours de développement) permettant d'appeler Canonical directement depuis Agda.
+Dans un premier temps, nous présentons une première intégration de Canonical dans l’assistant de preuve Agda. 
+Nous présentons d’abord Canonical (sous-section 2.1), ainsi qu’Agda (sous-section 2.2), 
+avant de donner un algorithme permettant de convertir des types d’Agda en types de Canonical (sous-section 2.4). 
+Cette contribution s’accompagne d’un premier prototype\footnote{Le prototype est disponible sur ce dépôt GitHub : \url{https://github.com/Unistra-Preuves/agda.git}}, 
+encore en cours de développement, permettant d’appeler directement Canonical depuis Agda.
 
-Dans un second temps, nous présentons nos travaux concernant l'utilisation de Canonical pour la théorie cubique des types.
-Nous présentons d'abord la théorie cubique des types et son implémentation dans Agda (sous-section 3.1), 
-et par la suite deux voies étudiées afin d'adapter notre prototype pour Cubical Agda (sous-section 3.2 et 3.3).
+Dans un second temps, nous présentons nos travaux concernant l’utilisation de Canonical pour la théorie cubique des types. 
+Nous introduisons d’abord un encodage des chemins en théorie cubique des types (sous-section 3.1), 
+ainsi que des contraintes qui leur sont associées (sous-section 3.2). 
+Nous terminons par une discussion de l’intégration de l’opérateur de composition homogène dans notre prototype, 
+ainsi que de nos résultats expérimentaux (sous-section 3.3).
 
 
 % In this work, we propose a first translation of Agda's type theory to Canonical's type theory together with a working prototype.
@@ -113,11 +115,12 @@ et par la suite deux voies étudiées afin d'adapter notre prototype pour Cubica
 % Pay special attention to the description  of the \emph{scientific} approach.
 
 \subsection*{Arguments en faveur de sa validité}
-Notre prototype se basant sur des branches encore en développement de Canonical, et étant lui-même encore en développement, 
-aucune preuve n'a encore été effectuée sur les traductions entre les théories des types d'Agda et Canonical.
-Cependant, de nombreux tests ont été effectués sur les différentes fonctionnalités de notre prototype. 
-Ceux-ci ont permis de montrer les limites de notre première approche de traduction cubique (sous-section 3.2) 
-et se sont révélés prometteurs concernant la deuxième approche (sous-section 3.3).
+Notre prototype reposant sur des branches de Canonical encore en cours de développement, 
+et étant lui-même toujours en développement, aucune preuve formelle n’a encore été établie concernant les traductions entre les théories des types d’Agda et de Canonical.
+
+Cependant, de nombreux tests ont été réalisés afin d’évaluer les différentes fonctionnalités de notre prototype. 
+Ceux-ci ont notamment permis de mettre en évidence les limites de nos différentes approches pour la traduction des chemins cubiques 
+et se sont révélés prometteurs quant à l’approche finale que nous présentons.
 
 % We did multiple tests that cover a large span of cases. 
 
@@ -128,23 +131,42 @@ et se sont révélés prometteurs concernant la deuxième approche (sous-section
 
 \subsection*{Sommaire et travaux futurs}
 
+Le travail réalisé au cours de ce stage constitue une preuve de concept pour l’automatisation de la recherche de preuves en théorie cubique des types.
+Nous y proposons deux contributions principales. 
+La première consiste en une intégration partielle du logiciel de recherche de preuves Canonical au sein de l’assistant de preuves Agda. 
+Nous nous sommes notamment intéressés à la conversion des types d’Agda, représentés selon leur syntaxe interne, 
+afin de pouvoir fournir des buts à Canonical via sa couche de compatibilité.
+Dans un second temps, nous nous sommes appuyés sur l’intégration présentée dans la première partie afin d’automatiser certaines preuves en théorie cubique des types. 
+Cette automatisation repose notamment sur un encodage des types de chemins et des contraintes de cohérence associées à leurs extrémités.
+
+Dans le cadre de travaux futurs, nous souhaiterions dans un premier temps améliorer l’utilisabilité de Canonical au sein d’Agda. 
+Cela passerait notamment par la possibilité de récupérer automatiquement les définitions de fonctions afin de les transformer en équations qui seraient ensuite fournies à Canonical, 
+par la gestion du pattern matching d’Agda, ainsi que par différentes corrections de bugs et améliorations de l’interface utilisateur.
+
+Dans un second temps, nous souhaiterions poursuivre l’étude des différentes manières d’encoder la théorie cubique des types et ses spécificités au sein d’autres théories des types, 
+telles que celle utilisée par Canonical.
+Cette voie constitue l’une des pistes que nous explorerons dans le cadre de ma thèse, 
+qui a pour objectif de rendre plus efficace l’évaluation des preuves en théorie homotopique et cubique des types.
+
 % What did you contribute to the area?
 % What comes next?
 % What is a good \emph{next} step or question?
 
-% \subsection*{Notes and Acknowledgment}
+\clearpage
 
 \section{Contexte du stage}
-Dans cette section, nous présentons le contexte dans lequel ce stage a été réalisé.
-Nous nous attardons sur la théorie des types dépendants et ses applications ainsi que sur la preuve automatisée. 
+Dans cette section, nous présentons le contexte dans lequel ce stage a été réalisé. 
+Nous nous intéressons à la théorie des types dépendants et à ses applications, ainsi qu’à la recherche de preuves automatisée. 
+Nous terminons par une brève présentation de la théorie cubique des types.
 
 \subsection{La théorie des types dépendants.}
 
 \paragraph{Un système de preuves.}
-Une théorie des types est un système de preuves formelles dans lequel on s'intéresse aux programmes bien typés. 
-Celle-ci est définie par un ensemble de termes (programmes) que l'on peut construire, 
-un ensemble de types que l'on peut construire, ainsi qu'un ensemble de règles de typage afin d'attribuer des types aux termes.
-Nous notons $t : T$ pour indiquer qu'un terme $t$ est de type $T$ et $\Gamma \vdash t : T$ que le contexte $\Gamma$ permet de déduire que $t$ est de type $T$.
+Une théorie des types est un système formel dans lequel on s’intéresse notamment aux programmes bien typés. 
+Celle-ci est définie par un ensemble de termes (programmes) constructibles, un ensemble de types constructibles, 
+ainsi qu’un ensemble de règles de typage permettant d’attribuer des types aux termes et de définir les conversions entre types.
+Nous notons $\mathsf{t : T}$ pour indiquer qu'un terme $\mathsf{t}$ est de type $\mathsf{T}$ et $\mathsf{\Gamma \vdash t : T}$ 
+que le contexte $\mathsf{\Gamma}$ permet de déduire que $\mathsf{t}$ est de type $\mathsf{T}$.
 
 \begin{figure}[h]
 \centering
@@ -187,17 +209,17 @@ e ::= x \mid \lambda x : \tau.\, e \mid e\, e
 \end{figure}
 
 \paragraph{Correspondance de Curry-Howard.}
-Dans ses travaux, Howard établit un lien profond entre les propositions de la logique intuitionniste et les types.
-Via cette correspondance, prouver qu'une formule $A$ est vraie revient exhiber un programme construisant un objet de type $A$.
+Dans ses travaux \cite{howard1980formulae}, Howard établit un lien profond entre les propositions de la logique intuitionniste et les types.
+Via cette correspondance, prouver qu'une formule $\mathsf{A}$ est vraie revient à exhiber un programme construisant un objet de type $\mathsf{A}$.
 En enrichissant nos types en permettant aux types de dépendre de termes, 
-on obtient un système de preuves dans lequel on peut décrire tous les énoncés mathématiques.
+on obtient un système de preuves dans lequel on peut décrire tous les énoncés mathématiques, la théorie des types dépendants \cite{martinlof1984intuitionistic}.
 
 \paragraph{Assistants à la preuve.}
 Les assistants à la preuve comme Rocq, Lean et Agda sont basés sur des théories des types dépendants.
-Dans ces systèmes, on décrit un énoncé à prouver via un type ainsi qu'(une manière de construire) un terme de preuve 
-et l'assistant vérifie que le terme possède le bon type. 
+Dans ces systèmes, on décrit un énoncé à prouver via un type, et une preuve de cet énoncé via un terme qui à le type correspondant. 
+L'assistant vérifie que le terme possède le bon type avec un algorithme de type-checking \cite{coquand1996algorithm}. 
 Dans la figure \ref{fig:agda-proof}, la première ligne permet de spécifier le type (l'énoncé) à prouver, 
-et la deuxième décrit un terme (une preuve) de ce type.
+et la deuxième décrit un terme (une preuve) de ce type dans la syntaxe d'Agda\footnote{Le manuel de référence d'Agda : \url{https://agda.readthedocs.io/en/latest/}}.
 
 \begin{figure}[h]
 \centering
@@ -209,107 +231,290 @@ et la deuxième décrit un terme (une preuve) de ce type.
 \label{fig:agda-proof}
 \end{figure}
 
-\subsection{La preuve automatisée.}
 
 \subsection{La théorie cubique des types}
-\paragraph{La théorie homotopique des types.}
-En mathématiques, on étudie souvent des objets à travers différentes représentations, 
-cependant les propriété internes des objets ne doivene pas dépendre de ces représentations. 
-C'est dans le but de représenter cette indépendance à la représenation que l'axiome d'univalence à été introduit.
-Celui-ci stipule qu'avoir une équivalence entre deux types est équivalent a avoir une égalité entre ces deux types.
+\subsubsection{La théorie homotopique des types.}
+En mathématiques, on étudie souvent des objets à travers différentes représentations. 
+Cependant, les propriétés intrinsèques de ces objets ne dépendent pas de la représentation choisie. 
+Par exemple, un graphe peut être étudié à travers sa liste d’adjacence ou sa matrice d’adjacence.
 
-Cet axiome constitue le principal ajout de la theorie homotopique des types \cite{hottbook}(HoTT).
-Celle ci possède de nombreuses propriété : du point de vue du mathématicien, cette théorie se place comme alternative à la théorie des ensembles tout en offrant des outils puissant pour faire de l'homotopie synthetique.
-Cependant, l'ajout de l'axiome d'univalence casse la bonne propriété de constructivité de HoTT car aucune définition ne lui est associée.
+C’est dans le but de formaliser cette indépendance vis-à-vis de la représentation que l’axiome d’univalence a été introduit par Voevodsky. 
+Celui-ci stipule que, pour deux types, l’existence d’une équivalence entre ceux-ci est liée à l’existence d’une égalité entre ces deux types. 
+Une équivalence peut être vue comme une manière de mettre en correspondance deux types tout en préservant leur structure.
 
-\paragraph{Une interprétation constructive de l'univalence.}
-Dans le but de regagner cette propriété de constructivité, la théorie cubique des types \cite{cohen2016cubical} à été introduite.
-Celle ci ajoute un nouveau type I représentant l'interval $[0; 1]$ et donne une nouvelle interprétation à l'égalité .
-Une preuve d'égalité entre deux termes $x$ et $y$ au sein d'un type $A$ est interprêtée par une fonction de l'interval vers le type $A$ qui,
-lorsque évaluée en 0 (resp. 1) doit être définitionnelement égal à x (resp. y).
-Pictorallement, une égalité en théorie cubique des types peut être vue comme une arête, 
-une égalité entre égalité (une fonction de $I \times I \to A$) comme un carré, 
-une fonction de $I \times I \times I \to A$ comme un cube, etc 
+Cet axiome constitue le principal ajout de la théorie homotopique des types \cite{hottbook} (HoTT). 
+Celle-ci possède de nombreuses propriétés. 
+Du point de vue du mathématicien, cette théorie se présente comme une alternative à la théorie des ensembles, 
+tout en offrant des outils puissants pour développer l’homotopie synthétique. 
+L’extensionnalité des fonctions et des propositions est également démontrable dans cette théorie.
 
+Cependant, l’ajout de l’axiome d’univalence brisent les propriétés calculatoires de la théorie des types, 
+car aucune règle de calcul ne lui est associée.
 
+\subsubsection{Une interprétation constructive de l'univalence.}
+Dans le but de retrouver ces propriétés calculatoires, la théorie cubique des types \cite{cohen2016cubical} a été introduite par Cohen, Coquand, Huber et Mörtberg.
+Celle-ci ajoute un nouveau type $\mathsf{I}$ représentant l’intervalle $\mathsf{[0;1]}$ et donne une nouvelle interprétation de l’égalité.
+Une preuve d’égalité entre deux termes $\mathsf{x}$ et $\mathsf{y}$ d’un type $\mathsf{A}$ est interprétée comme une fonction de l’intervalle vers le type $\mathsf{A}$ qui,
+lorsqu’elle est évaluée en $\mathsf{0}$ (respectivement $\mathsf{1}$), doit être définitionnellement égale à $\mathsf{x}$ (respectivement $\mathsf{y}$).
 
+Picturalement, une égalité en théorie cubique des types peut être représentée comme une arête,
+une égalité entre égalités (une fonction de $\mathsf{I \times I \to A}$) comme un carré,
+et une fonction de $\mathsf{I \times I \times I \to A}$ comme un cube, et ainsi de suite.
+
+\begin{figure}[htbp]
+\centering
+
+```
 % ============================================================
-% Figure 1 : un terme p : a = b comme un chemin (arête)
+% Figure (a) : un terme p : a = b comme un chemin (arête)
 % ============================================================
-\begin{tikzpicture}[scale=1.4]
- 
-  % Points
-  \coordinate (a) at (0,0);
-  \coordinate (b) at (4,0);
- 
-  % L'arête = le chemin p
-  \draw[thick, -{Latex[length=2mm]}] (a) -- (b) node[midway, above] {$p$};
- 
-  % Extrémités
-  \filldraw (a) circle (1.2pt) node[below] {$a$};
-  \filldraw (b) circle (1.2pt) node[below] {$b$};
- 
-  % Paramétrisation par l'intervalle
-  \draw[dashed, gray] (a) ++(0,-0.9) -- ++(4,0)
-    node[pos=0, below] {$i0$} node[pos=1, below] {$i1$};
-  \node[gray] at (2,-0.9-0.35) {$i : \mathbb{I}$};
- 
-  \node at (2, 0.8) {$p : a =_A b \quad\Longleftrightarrow\quad p : \mathbb{I} \to A,\ p(i0)=a,\ p(i1)=b$};
- 
+\begin{minipage}[c]{0.47\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1.15]
+
+        % Points
+        \coordinate (a) at (0,0);
+        \coordinate (b) at (4,0);
+
+        % L'arête = le chemin p
+        \draw[thick, -{Latex[length=2mm]}]
+            (a) -- (b)
+            node[midway, above] {$p$};
+
+        % Extrémités
+        \filldraw (a) circle (1.2pt) node[below] {$a$};
+        \filldraw (b) circle (1.2pt) node[below] {$b$};
+
+        % Paramétrisation par l'intervalle
+        \draw[dashed, gray]
+            (a) ++(0,-0.9) -- ++(4,0)
+            node[pos=0, below] {$i0$}
+            node[pos=1, below] {$i1$};
+
+        \node[gray] at (2,-1.25) {$i : \mathbb{I}$};
+
+        \node at (2,0.75)
+            {$p : a =_A b \quad\Longleftrightarrow\quad
+            p : \mathbb{I} \to A,\ p(i0)=a,\ p(i1)=b$};
+
+    \end{tikzpicture}
+
+    \medskip
+    \textbf{(a)} Une égalité comme une arête
+\end{minipage}
+\hfill
+% ============================================================
+% Figure (b) : une égalité entre égalités comme un carré
+% ============================================================
+\begin{minipage}[c]{0.47\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1.05]
+
+        % Sommets du carré
+        \coordinate (a0) at (0,0);
+        \coordinate (a1) at (0,3);
+        \coordinate (b0) at (4,0);
+        \coordinate (b1) at (4,3);
+
+        % Face intérieure = la 2-cellule alpha
+        \fill[gray!12]
+            (a0) -- (b0) -- (b1) -- (a1) -- cycle;
+
+        % Bord bas : chemin p
+        \draw[thick, -{Latex[length=2mm]}]
+            (a0) -- (b0)
+            node[midway, below] {$p$};
+
+        % Bord haut : chemin q
+        \draw[thick, -{Latex[length=2mm]}]
+            (a1) -- (b1)
+            node[midway, above] {$q$};
+
+        % Bords gauche/droit : chemins constants
+        \draw[thick]
+            (a0) -- (a1)
+            node[midway, left] {$\mathsf{refl}_a$};
+
+        \draw[thick]
+            (b0) -- (b1)
+            node[midway, right] {$\mathsf{refl}_b$};
+
+        % Sommets
+        \foreach \pt/\lbl/\pos in {
+            a0/a/below left,
+            b0/b/below right,
+            a1/a/above left,
+            b1/b/above right}
+        {
+            \filldraw (\pt) circle (1.2pt) node[\pos] {$\lbl$};
+        }
+
+        % Nom de la 2-cellule
+        \node at (2,1.5) {$\alpha$};
+
+        % Paramétrisation
+        \node[gray] at (2,-0.6)
+            {$(i,j) : \mathbb{I} \times \mathbb{I}$};
+
+        \node at (2,3.65)
+            {$\alpha : p =_{a =_A b} q$};
+
+    \end{tikzpicture}
+
+    \medskip
+    \textbf{(b)} Une égalité entre égalités comme un carré
+\end{minipage}
+
+\caption{Interprétation géométrique des égalités en théorie cubique des types.}
+\label{fig:geometrie-cubique}
+\end{figure}
+
+\subsubsection{La composition homogène}
+Un autre ingrédient clé de la théorie cubique des types est l’opérateur de composition homogène.
+Introduit dans le CCHM \cite{cohen2016cubical}, cet opérateur permet de compléter des cubes ouverts en dimension $\mathsf{n}$.
+Pour cela, il suffit de lui spécifier un ensemble de faces cohérentes entre elles, ainsi qu’une base permettant de construire la face manquante.
+
+Par exemple, dans la figure \ref{fig:hcomp}, les faces de gauche, de droite et du bas ont été fournies à l’opérateur $\mathsf{hcomp}$,
+qui construit alors la face du haut.
+Comme mentionné précédemment, pour que cet opérateur fonctionne, les faces fournies doivent être cohérentes aux endroits où elles se rencontrent.
+Supposons que $\mathsf{i = i0}$ et $\mathsf{j = i0}$, correspondant au coin en bas à gauche.
+Les deux arêtes qui se rencontrent doivent alors désigner un même terme, ici $\mathsf{a}$.
+
+\begin{figure}[htbp]
+\centering
+
+\begin{tikzpicture}[scale=1.25]
+
+    % --------------------------------------------------------
+    % Sommets
+    % --------------------------------------------------------
+    \coordinate (a0) at (0,0);
+    \coordinate (b0) at (4,0);
+    \coordinate (a1) at (0,3);
+    \coordinate (c1) at (4,3);
+
+    % --------------------------------------------------------
+    % Intérieur : cube ouvert / face à construire
+    % --------------------------------------------------------
+    \fill[gray!10]
+        (a0) -- (b0) -- (c1) -- (a1) -- cycle;
+
+    % --------------------------------------------------------
+    % Face du bas : DONNÉE
+    % --------------------------------------------------------
+    \draw[thick, -{Latex[length=2mm]}]
+        (a0) -- (b0)
+        node[midway, below] {$p$};
+
+    % --------------------------------------------------------
+    % Face de gauche : DONNÉE
+    % --------------------------------------------------------
+    \draw[thick]
+        (a0) -- (a1)
+        node[midway, left] {$\mathsf{refl}_a$};
+
+    % --------------------------------------------------------
+    % Face de droite : DONNÉE
+    % --------------------------------------------------------
+    \draw[thick, -{Latex[length=2mm]}]
+        (b0) -- (c1)
+        node[midway, right] {$q$};
+
+    % --------------------------------------------------------
+    % Face du haut : RÉSULTAT DE hcomp
+    % --------------------------------------------------------
+    \draw[very thick, dashed, -{Latex[length=2mm]}]
+        (a1) -- (c1)
+        node[midway, above] {$p \cdot q$};
+
+    % --------------------------------------------------------
+    % Sommets
+    % --------------------------------------------------------
+    \foreach \pt/\lbl/\pos in {
+        a0/a/below left,
+        b0/b/below right,
+        a1/a/above left,
+        c1/c/above right}
+    {
+        \filldraw (\pt) circle (1.2pt)
+            node[\pos] {$\lbl$};
+    }
+
+    % --------------------------------------------------------
+    % Axes de l'intervalle
+    % --------------------------------------------------------
+    \draw[gray, -{Latex[length=1.5mm]}]
+        (-1,0) -- (-1,3)
+        node[above] {$i$};
+
+    \node[gray] at (-1,-0.3) {$i0$};
+    \node[gray] at (-1,3.3) {$i1$};
+
+    \draw[gray, -{Latex[length=1.5mm]}]
+        (0,-1) -- (4,-1)
+        node[right] {$j$};
+
+    \node[gray] at (0,-1.3) {$i0$};
+    \node[gray] at (4,-1.3) {$i1$};
+
+    % --------------------------------------------------------
+    % Expression de hcomp
+    % --------------------------------------------------------
+    \node at (2,3.85)
+        {$\mathsf{hcomp}^{i}
+        \big[(j{=}i0)\mapsto a,\,
+        (j{=}i1)\mapsto q\,i\big]\,(p\,j)$};
+
+    % --------------------------------------------------------
+    % Indication visuelle : face calculée
+    % --------------------------------------------------------
+    \node[gray] at (2,1.5) {$\mathsf{hcomp}$};
+
 \end{tikzpicture}
- 
-\bigskip
- 
-% ============================================================
-% Figure 2 : une égalité entre égalités comme un carré
-%   alpha : p = q  (p, q : a = b)
-% ============================================================
-\begin{tikzpicture}[scale=1.4]
- 
-  % Sommets du carré (bord constant à gauche/droite : a et b)
-  \coordinate (a0) at (0,0);   % (i0,j0)
-  \coordinate (a1) at (0,3);   % (i0,j1)
-  \coordinate (b0) at (4,0);   % (i1,j0)
-  \coordinate (b1) at (4,3);   % (i1,j1)
- 
-  % Face intérieure = la 2-cellule alpha
-  \fill[gray!12] (a0) -- (b0) -- (b1) -- (a1) -- cycle;
- 
-  % Bord bas : chemin p
-  \draw[thick, -{Latex[length=2mm]}] (a0) -- (b0) node[midway, below] {$p$};
-  % Bord haut : chemin q
-  \draw[thick, -{Latex[length=2mm]}] (a1) -- (b1) node[midway, above] {$q$};
-  % Bords gauche/droit : chemins constants (refl)
-  \draw[thick] (a0) -- (a1) node[midway, left] {$\mathsf{refl}_a$};
-  \draw[thick] (b0) -- (b1) node[midway, right] {$\mathsf{refl}_b$};
- 
-  % Sommets
-  \foreach \pt/\lbl/\pos in {a0/a/below left, b0/b/below right, a1/a/above left, b1/b/above right}
-    \filldraw (\pt) circle (1.2pt) node[\pos] {$\lbl$};
- 
-  % Nom de la 2-cellule au centre
-  \node at (2,1.5) {$\alpha$};
- 
-  % Paramétrisation
-  \node[gray] at (2,-0.6) {$(i,j) : \mathbb{I} \times \mathbb{I}$};
- 
-  \node at (2, 3.7) {$\alpha : p =_{a =_A b} q$};
- 
-\end{tikzpicture}
 
-A notre connaissance, la seule implémentation sur un assistant de preuve répendu de la théorie cubique des types est celle fournie par Cubical Agda \cite{vezzosi2019cubical}.
+\caption{Composition homogène : les faces de gauche, de droite et du bas sont fournies à $\mathsf{hcomp}$, qui construit la face du haut. La face calculée est représentée en pointillés.}
+\label{fig:hcomp}
+
+\end{figure}
+
+En dimension 3, cette contrainte de cohérence s’applique non plus à des coins, mais à des arêtes entières.
+En dimension 4, elle s’applique à des faces, et ainsi de suite.
+
+La seule implémentation disponible sur un assistant de preuve répandu de la théorie cubique des types est celle fournie par Cubical Agda \cite{vezzosi2019cubical}.
+C'est pour cette raison que nous nous intéresserons à celui-ci dans le reste de ce travail.
+
+
+\subsection{La preuve automatisée en théorie cubique des types.}
+Un enjeu majeur de la théorie cubique des types est de parvenir à automatiser la recherche de preuves. 
+Dans les théories des types dépendants plus classiques, il existe plusieurs classes d’outils permettant d’automatiser cette recherche.
+
+Une première classe d’outils regroupe ceux qui cherchent à appliquer automatiquement des tactiques. 
+On peut notamment citer Aesop \cite{limpberg2023aesop} dans Lean, ainsi que les nombreuses tactiques de Rocq permettant d’effectuer ce type de recherche, 
+telles que \texttt{tauto} ou \texttt{firstorder}.
+
+Une deuxième classe de prouveurs automatiques traduit les obligations de preuve dans une logique du premier ordre. 
+C’est notamment le cas de Coqhammer \cite{czajka2018hammer} dans Rocq et de Sledgehammer \cite{bohme2010sledgehammer} dans Isabelle, 
+qui transmettent ensuite les formules obtenues à des solveurs SMT ou des prouveurs automatiques tels que Vampire \cite{bartek2025vampire}, 
+CVC5 \cite{barbosa2022cvc5} ou Z3 \cite{de2008z3}.
+
+Enfin, une dernière classe regroupe les logiciels reposant directement sur l'habitation de types. 
+C’est notamment le cas d’Agsy et de son successeur Mimer \cite{skystedt2022new} dans Agda.
+
+À notre connaissance, aucune de ces approches n’est actuellement utilisée pour l’automatisation de la recherche de preuves en théorie cubique des types. 
+% Même Mimer, qui est actuellement le principal prouveur automatique disponible dans Agda, ne semble pas être en mesure de produire des preuves exploitant les constructions spécifiques à la théorie cubique des types.
 
 \section{Traduction d'Agda vers Canonical}
-Dans cette section, nous montrons comment utiliser Canonical au sein d'Agda.
-Nous présentons dans un premier temps Canonical, puis nous présentons la solution étudiée pour y faire appel depuis Agda.
-Nous finissons par présenter la manière utilisée de convertir les types d'Agda vers des types de Canonical.
+Dans cette section, nous présentons l’intégration de Canonical au sein d’Agda. 
+Nous introduisons dans un premier temps Canonical, puis la solution étudiée pour permettre son utilisation depuis Agda. 
+Nous terminons par la présentation de la méthode utilisée pour convertir les types d’Agda en types de Canonical.
 
 \subsection{Canonical}
-Canonical est un solveur pour théorie des types dépendants écrit en Rust.
-Celui ci fonctionne sur sa propre théorie des types ce qui lui permet, entre autre, 
-d'être totalement indépendant des assistants de preuves et de pouvoir être utilisé avec plusieurs assistant comme Rocq, Lean ou encore Agda.
-Il suffit de l'ajouter comme un plugins et de transformer les goals fourni à Canonical par l'assistant de preuve et de transformer le résultat fourni par Canonical à l'assistant de preuve.
-Dans leurs travaux \cite{norman2025canonical}, Norman et Avigad présentent une telle implémentation de Canonical dans l'assistant de preuves Lean. 
+Canonical est un solveur pour les théories des types dépendants écrit en Rust par Norman et Avigad \cite{norman2025canonical}.
+Celui-ci fonctionne sur sa propre théorie des types ce qui lui permet, entre autre, 
+d'être totalement indépendant des assistants de preuves et de pouvoir potentiellement être utilisé avec plusieurs assistants.
+Il suffit de l'ajouter comme un plugin et de transformer les énoncés de l'assistant à la preuve en types de Canonical,
+les lui fournir pour qu'il effectue sa recherche de preuves et, en cas de succès, traduire le résultat dans le langage de l'assistant à la preuve.
+Dans leurs travaux \cite{norman2025canonical}, Norman et Avigad présentent une telle implémentation de Canonical dans l'assistant à la preuve Lean. 
 
 \paragraph{Fonctionnement.} 
 Étant donné un type, Canonical essaie de trouver un terme qui habite ce type en effectuant une recherche exhaustive en profondeur sur les termes.
@@ -492,7 +697,7 @@ Nous récupèrons les types des goals écrit dans la syntaxe interne des termes 
 envoyons le type de goal à Canonical via la FFI de Haskell.
 Étant la solution en partie utilisée par Mimer et pour des raisons d'ergonomie, nous avons choisi de nous concentrer sur la deuxième solution.
 
-\subsection{Traduction}
+\subsection{Cibles de la traduction}
 La théorie des types de Agda étant différente de celle de Lean, 
 nous devons adapter les techniques présentées dans \cite{norman2025canonical} pour faire notre traduction.
 
@@ -774,57 +979,8 @@ La solution que nous avons adopté est de replier sur le but les éléments du c
 Le but 0 de la figure \ref{fig:agda-fe} passerais de $(Goal : B)$ à $(Goal : I \to A \to B)$ avec les contraintes $Goal i0 a = f a$ et $Goal i1 a = g a$.
 Pour revenir au but initial, il suffit de redéplier le termes fourni par canonical en se débarassant des abstraction que nous avons ajouté.
 
-\subsection{La composition homogène}
-Un autre ingrédient clef de la théorie cubique des types l'operateur de composition homogène.
-Introduit dans le CCHM \cite{cohen2016cubical}, cet operateur permet de fermer des cubes ouvert en n-dimensions,
-il suffit de lui spécifier un ensemble de faces cohérentes entre elles ainsi qu'une base pour justifier la face manquante.
 
-Par exemple, en figure \ref{fig:hcomp}, les faces de gauche, droite et bas on été fournie au hcomp et il fourni la face du haut.
-Commme mentionné, pour que cet opérateur fonctionne, les faces fournies doivent être cohérentes aux endroits ou elles se touchent.
-Supposons que $i = i0$ et $j = i0$ (le coin en bas a gauche), deux aretes se touchent et doivent désigner un même terme (ici a).
-
-En dimension 3, cette cohérence s'applique non plus a des coins mais a des aretes entière, en dimension 4, a des faces etc..
-
-
-\begin{figure}[h]
-\begin{tikzpicture}[scale=1.4]
- 
-  % Sommets
-  \coordinate (a0) at (0,0);   % (i0,j0) = a
-  \coordinate (b0) at (4,0);   % (i0,j1) = b
-  \coordinate (a1) at (0,3);   % (i1,j0) = a   (bord gauche constant)
-  \coordinate (c1) at (4,3);   % (i1,j1) = c
- 
-  % Intérieur : le remplissage (filler), en pointillé/grisé = "ouvert"
-  \fill[gray!10] (a0) -- (b0) -- (c1) -- (a1) -- cycle;
- 
-  % Bord bas (i = i0) : DONNÉ = p
-  \draw[thick, -{Latex[length=2mm]}] (a0) -- (b0) node[midway, below] {$p$};
-  % Bord gauche (j = i0) : DONNÉ = constant a
-  \draw[thick] (a0) -- (a1) node[midway, left] {$\mathsf{refl}_a$};
-  % Bord droit (j = i1) : DONNÉ = q
-  \draw[thick, -{Latex[length=2mm]}] (b0) -- (c1) node[midway, right] {$q$};
-  % Bord haut (i = i1) : RÉSULTAT = p . q, en pointillé (calculé, pas donné)
-  \draw[thick, dashed, -{Latex[length=2mm]}] (a1) -- (c1) node[midway, above] {$p \cdot q$};
- 
-  % Sommets
-  \foreach \pt/\lbl/\pos in {a0/a/below left, b0/b/below right, a1/a/above left, c1/c/above right}
-    \filldraw (\pt) circle (1.2pt) node[\pos] {$\lbl$};
- 
-  % Axes
-  \draw[gray, -{Latex[length=1.5mm]}] (-1,0) -- (-1,3) node[above] {$i$};
-  \node[gray] at (-1,-0.3) {$i0$};
-  \node[gray] at (-1,3.3) {$i1$};
-  \draw[gray, -{Latex[length=1.5mm]}] (0,-1) -- (4,-1) node[right] {$j$};
- 
-  \node at (2,3.9) {$\mathsf{hcomp}^{i}\big[(j{=}i0)\mapsto a,\ (j{=}i1)\mapsto q\,i\big]\ (p\,j)$};
- 
-\end{tikzpicture}
-\label{fig:hcomp}
-\caption{Preuve de la transitivité des chemins.}
-\end{figure}
-
-\subsubsection{La composition homogène avec Canonical}
+\subsection{La composition homogène avec Canonical}
 Nous avons donc chercher un moyen de fournir à Canonical la possibilité de creer des chemins avec la composition homogène.
 Notre première approche était de fournir a Canonical toute la signature de l'implémentation de cet opérateur dans Agda, 
 qui est décrit en section 3.3 et 3.4 de \cite{vezzosi2019cubical}.
@@ -868,6 +1024,12 @@ de déduire toutes les contraintes pour les faces qu'ils nous manque.
 Cependant, si une contraintes pour une face dépend d'une autre face pas encore spécifié, Agda ne peut pas déduire la contrainte et laisse une méta-variable à la place.
 En figure \ref{fig:agda-hard}, les buts 0 et 1 sont interdépendants et notre approche ne permet pas de l'illuster.
 
+\paragraph{Résultats.}
+% L'approche que nous avons présentée au cours de cette section a permis d'automatiser la recherche de plusieurs buts simples.
+La ou Mimer n'était pas en capacité de fournir de preuves utilisant la théorie cubique des types, 
+notre approche a permis d'automatiser plusieurs preuves simples que nous avons présenté durant cette section.
+Nous pensons que l'utilisation de Canonical présente un réel potentiel pour l'automatisation de preuves au sein de la théorie cubique des types.
+
 \begin{figure}[h]
 \centering
 \begin{minted}[escapeinside=||, mathescape]{agda}
@@ -890,12 +1052,49 @@ invSides-filler {x = x} p q i j =
 \label{fig:agda-hard}
 \end{figure}
 
-\section{Conclusion}
+\section{Conclusion et travaux futurs}
+Nous repètons ici ce qui est présenté dans la sous-section éponyme présente au début de ce rapport.
+
+Le travail réalisé au cours de ce stage constitue une preuve de concept pour l’automatisation de la recherche de preuves en théorie cubique des types.
+Nous y proposons deux contributions principales. 
+La première consiste en une intégration partielle du logiciel de recherche de preuves Canonical au sein de l’assistant de preuves Agda. 
+Nous nous sommes notamment intéressés à la conversion des types d’Agda, représentés selon leur syntaxe interne, 
+afin de pouvoir fournir des buts à Canonical via sa couche de compatibilité.
+Dans un second temps, nous nous sommes appuyés sur l’intégration présentée dans la première partie afin d’automatiser certaines preuves en théorie cubique des types. 
+Cette automatisation repose notamment sur un encodage des types de chemins et des contraintes de cohérence associées à leurs extrémités.
+
+Dans le cadre de travaux futurs, nous souhaiterions dans un premier temps améliorer l’utilisabilité de Canonical au sein d’Agda. 
+Cela passerait notamment par la possibilité de récupérer automatiquement les définitions de fonctions afin de les transformer en équations qui seraient ensuite fournies à Canonical, 
+par la gestion du pattern matching d’Agda, ainsi que par différentes corrections de bugs et améliorations de l’interface utilisateur.
+
+Dans un second temps, nous souhaiterions poursuivre l’étude des différentes manières d’encoder la théorie cubique des types et ses spécificités au sein d’autres théories des types, 
+telles que celle utilisée par Canonical.
+Cette voie constitue l’une des pistes que nous explorerons dans le cadre de ma thèse, 
+qui a pour objectif de rendre plus efficace l’évaluation des preuves en théorie homotopique et cubique des types.
+
+\subsection*{Remerciements}
+% Durant ce rapport, les parties de code qui sont montrées utilisent la syntaxe d'Haskell.
+% Ce choix s'explique par le fait que l'assistant de preuve Agda (sur lequel ce travail est basé) est lui même écrit en language Haskell.
+% Les énoncés et leurs preuves seront écrit en syntaxe Agda.
+
+Je tiens à remercier tes chaleureusement Pierre Boutry et Loïc Pujet pour toutes les opportunités 
+qu'ils m'ont offerts ainsi que pour toute l'aide qu'il m'ont apporté durant ce stage et pour mes candidatures a des bourses doctorales.
+
+Je suis également reconnaisant envers Chase Norman pour son aide précieuse et ses explications concernant le fonctionnement Canonical.
+
+J'aimerais remercier Aymeric Feltz, Damien Mariotti et Lyes Saadi avec qui j'ai passé 
+une grande partie de mon stage et qui m'ont bien souvent servi de canards en plastique.
+
+Enfin, je souhaite remercier l'équipe IGG qui s'est montrée particulièrement accueuillante tout au long de ce stage.
 
 \clearpage
 \bibliography{main}
 \clearpage
 \appendix
+
+\section{Sommaire}
+\tableofcontents
+\clearpage
 \section{Code source complémentaire}
 
 \begin{figure}[h]
