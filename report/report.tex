@@ -240,7 +240,9 @@ Par exemple, un graphe peut être étudié à travers sa liste d’adjacence ou 
 
 C’est dans le but de formaliser cette indépendance vis-à-vis de la représentation que l’axiome d’univalence a été introduit par Voevodsky. 
 Celui-ci stipule que, pour deux types, l’existence d’une équivalence entre ceux-ci est liée à l’existence d’une égalité entre ces deux types. 
-Une équivalence peut être vue comme une manière de mettre en correspondance deux types tout en préservant leur structure.
+Une équivalence entre deux types $\mathsf{A}$ et $\mathsf{B}$ est une fonction $\mathsf{f : A \to B}$ 
+qui admet un inverse à gauche (une fonction $\mathsf{g : B \to A}$ avec $\mathsf{g \circ f = id}$) 
+et un inverse à droite (une fonction $\mathsf{h : B \to A}$ avec $\mathsf{f \circ h = id}$)
 
 Cet axiome constitue le principal ajout de la théorie homotopique des types \cite{hottbook} (HoTT). 
 Celle-ci possède de nombreuses propriétés. 
@@ -517,25 +519,28 @@ les lui fournir pour qu'il effectue sa recherche de preuves et, en cas de succè
 Dans leurs travaux \cite{norman2025canonical}, Norman et Avigad présentent une telle implémentation de Canonical dans l'assistant à la preuve Lean. 
 
 \paragraph{Fonctionnement.} 
-Étant donné un type, Canonical essaie de trouver un terme qui habite ce type en effectuant une recherche exhaustive en profondeur sur les termes.
-Le problème de l'habitation de type en théorie des types dépendants étant indécidable,
-Canonical n'est pas garanti de trouver un résultat au problème qui lui est posé.
-Son implémentation en Lean a cependant montré des performances accrue face à celle de Aesop et Duper.
-Nous avons donc décidé d'utiliser Canonical pour notre prototype en vue de l'utiliser pour la théorie cubique des types.
+Étant donné un type, Canonical cherche à trouver un terme qui habite ce type en effectuant une recherche exhaustive en profondeur parmi les termes en forme normale. 
+Le problème de l’habitation des types dans les théories des types dépendants étant semi-décidable, 
+Canonical est ainsi garanti de trouver une solution au problème qui lui est soumis lorsqu’une telle solution existe.
+
+Son implémentation dans Lean a montré des performances supérieures à celles d’Aesop et de Duper \cite{clune2024duper}, 
+deux autres outils de recherche de preuves. 
+Nous avons donc choisi d’utiliser Canonical pour notre prototype, dans l’objectif de l’appliquer à la théorie cubique des types.
 
 \paragraph{Théorie des types.}
-Afin de pouvoir restreindre au maximum son arbre de recherche tout en gardant maximum d'expressivité, 
-Canonical fonctionne sur sa propre théorie des types que nous donnons en figure \ref{fig:canonical-tt}.
-Celle-ci possède un unique constructeur de termes composé d'une liste de parametres, d'une liste de déclaration let, 
-un symbole de tête et une liste d'arguments.
-Un type de Canonical est un terme qui possède des annotations de types sur les lieurs (let et $\lambda$).
+Afin de restreindre au maximum son espace de recherche tout en conservant un niveau d’expressivité élevé, 
+Canonical repose sur sa propre théorie des types, présentée dans la figure \ref{fig:canonical-tt}.
 
-Chaque terme de Canonical doit être sous forme $\beta$-normale (aucune $\beta$-réduction au sein du terme) 
-et tout symbole d'arité $n$ doit être appliqué à exactement $n$ arguments (quitte à $\eta$-étendre les fonctions).
-Le symbole de tête du terme doit être lié par un let ou une $\lambda$-abstraction.
+Celle-ci possède un unique constructeur de termes, composé d’une liste de paramètres, 
+d’une liste de déclarations \texttt{let}, d’un symbole de tête et d’une liste d’arguments. 
+Un type de Canonical est un terme possédant des annotations de type sur ses lieurs (\texttt{let} et $\lambda$).
 
-Au sein des types, chaque annotation de type est entièrement optionnel.
-Un symbole dont le type n'est pas spécifié indique à Canonical que le symbole ne devrait pas être utilisé pour construire le terme Goal.
+Chaque terme de Canonical doit être sous forme $\beta$-normale, c’est-à-dire qu’aucune $\beta$-réduction ne doit être possible au sein du terme. 
+De plus, tout symbole d’arité $n$ doit être appliqué à exactement $n$ arguments, quitte à $\eta$-étendre les fonctions. 
+Le symbole de tête du terme doit être lié par un `let` ou une $\lambda$-abstraction.
+
+Au sein des types, chaque annotation de type est entièrement optionnelle. 
+L’absence d’annotation de type pour un symbole indique à Canonical que celui-ci ne doit pas être utilisé pour construire le terme correspondant au but.
 
 \begin{figure}[h]
 \centering
@@ -622,24 +627,28 @@ Z_i[\bar{A}[\bar{M}/\bar{x}]/\bar{y'}]
 \end{figure}
 
 \paragraph{Définitions, constantes.} 
-Canonical est capable de travailler avec des symboles constants ou encore des fonctions possèdant une définitions.
-Pour ce faire, il faut lui fournir via une déclaration let le symbole et son type.
-Il est également possible de fournir à Canonical des définitions pour ce symbole. 
+Canonical est capable de travailler avec des symboles représentant des constantes ainsi qu’avec des fonctions possédant une définition. 
+Pour ce faire, il faut lui fournir, au moyen d’une déclaration \texttt{let}, le symbole ainsi que son type. 
+Il est également possible de fournir à Canonical une définition associée à ce symbole, 
+qui sont des règles de réécriture de la forme $\mathsf{f~a_1~a_2~a_n = g~b_1~b_2~b_m}$
 
-Par exemple, supposons que l'on souhaite travailler avec la fonction $\_+\_$ défini dans la figure \ref{fig:agda-nat}.
-Il faut donc fournir le type et la définition de $\_+\_$.
-Cependant, le type de $\_+\_$ mentionnant le type inductif des entiers naturel $\mathbb{N}$ avec l'élément $Z : \mathbb{N}$ et la fonction $S : \mathbb{N} \to \mathbb{N}$,
-il faut également fournir à Canonical le type $\mathbb{N}$ et ses symboles.
-Le goal aura donc la forme : 
+Par exemple, supposons que l’on souhaite travailler avec la fonction $\mathsf{\_+\_}$ définie dans la figure \ref{fig:agda-nat}. 
+Il faut alors fournir à Canonical le type et la définition de $\mathsf{\_+\_}$. 
+Cependant, le type de $\mathsf{\_+\_}$ faisant intervenir le type inductif des entiers naturels $\mathsf{\mathbb{N}}$, 
+ainsi que les symboles $\mathsf{Z : \mathbb{N}}$ et $\mathsf{S : \mathbb{N} \to \mathbb{N}}$, 
+il est également nécessaire de fournir à Canonical la définition du type $\mathsf{\mathbb{N}}$ ainsi que celles de ses symboles.
+
+Le but aura donc la forme suivante :
 
 
 \begin{align*}
-let ..., (\mathbb{N} : Type), (Z : \mathbb{N}), (S : \Pi (\_ : \mathbb{N}).\mathbb{N}),\\
-(\_+\_ : \Pi (\_ : \mathbb{N}), (\_ : \mathbb{N}).\mathbb{N}) [zero + b = b ; suc~a + b = suc (a + b)],\\ 
-... in~T.
+&let ..., \\
+&(\mathbb{N} : Type), (Z : \mathbb{N}), (S : \Pi (\_ : \mathbb{N}).\mathbb{N}),\\
+&(\_+\_ : \Pi (\_ : \mathbb{N}), (\_ : \mathbb{N}).\mathbb{N}) [zero + b = b ; suc~a + b = suc (a + b)],\\ 
+&... in~T.
 \end{align*}
 
-\begin{figure}[h]
+\begin{figure}[htbp]
 \centering
 \begin{minted}[escapeinside=||, mathescape]{agda}
 data |$\mathbb{N}$| : Type where
@@ -659,13 +668,19 @@ suc a + b = suc (a + b)
 \subsection{Agda}
 \subsubsection{Fonctionnement d'Agda et appel à Canonical}
 \paragraph{Mode interactif.}
-Au-delà de vérifier les preuves qui lui sont fournies, 
-l'assistant de preuve Agda peut s'utiliser de manière interactive afin d'aider l'utilisateur à rédiger sa preuve.
-Nous pouvons spécifier à Agda que la preuve est incomplète en laissant un $?$ au sein du terme de preuve comme montré dans la figure \ref{fig:agda-proof-uncomplete}.
-De cette manière, Agda va créer un nouveau but et lui affecter le type que le terme manquant devrait avoir pour compléter la preuve.
-Par exemple, en compilant le code en figure \ref{fig:agda-proof-uncomplete}, Agda va créer le goal $0$ montré en figure \ref{fig:agda-proof-uncomplete-compiled}.
-Les termes $A$, $B$ étant implicitement introduits et le terme $imp$ explicitement introduit, Agda en déduit que le goal $0$ doit être de type $A \to B$. 
-L'utilisateur peut ainsi se placer dans le goal $0$ et écrire un terme qu'il fournira par la suite à Agda afin de compléter sa preuve.
+Au-delà de la vérification des preuves qui lui sont fournies, 
+l’assistant à la preuve Agda peut être utilisé de manière interactive afin d’aider l’utilisateur à construire sa preuve.
+
+Nous pouvons indiquer à Agda qu’une preuve est incomplète en laissant un $\mathsf{?}$ au sein du terme de preuve, 
+comme présenté dans la figure \ref{fig:agda-proof-uncomplete}. 
+Agda crée alors un nouveau but et lui associe le type que le terme manquant doit avoir pour compléter la preuve.
+
+Par exemple, lors de la compilation du code présenté dans la figure \ref{fig:agda-proof-uncomplete}, 
+Agda crée le $\mathsf{goal\ 0}$ présenté dans la figure \ref{fig:agda-proof-uncomplete-compiled}. 
+Les termes $\mathsf{A}$ et $\mathsf{B}$ étant implicitement introduits, tandis que le terme $\mathsf{imp}$ est explicitement introduit, 
+Agda en déduit que le $\mathsf{goal\ 0}$ doit être de type $\mathsf{A \to B}$.
+
+L’utilisateur peut alors se placer dans le $\mathsf{goal\ 0}$ et y écrire un terme, qu’il fournira ensuite à Agda afin de compléter sa preuve.
 \begin{figure}[h]
 \centering
 \begin{minted}{agda}
@@ -687,24 +702,31 @@ L'utilisateur peut ainsi se placer dans le goal $0$ et écrire un terme qu'il fo
 \end{figure}
 
 \paragraph{Appel à Canonical.}
-Dans le but d'aider l'utilisateur à remplir le goal dans lequel il se trouve, 
-nous souhaitons implémenter une commande qui récupère le type du goal courant et le fourni à Canonical.
-Deux solutions ont été envisagées afin de répondre à cette problématique.
-La première solution est de passer par le langage de reflection de Agda. 
-Celui-ci permet d'écrire des tactics de résolution directement comme des termes d'Agda.
-La deuxième solution consiste à implémenter une fonction d'appel à Canonical directement dans l'assistant lui-même dans son code Haskell.
-Nous récupèrons les types des goals écrit dans la syntaxe interne des termes d'Agda puis, après une passe de transformation, 
-envoyons le type de goal à Canonical via la FFI de Haskell.
-Étant la solution en partie utilisée par Mimer et pour des raisons d'ergonomie, nous avons choisi de nous concentrer sur la deuxième solution.
+Dans le but d’aider l’utilisateur à compléter le but dans lequel il se trouve, 
+nous souhaitons implémenter une commande permettant de récupérer le type du but courant et de le fournir à Canonical.
+
+Deux solutions ont été envisagées afin de répondre à cette problématique. La première consiste à passer par le langage de réflexion d’Agda. 
+Celui-ci permet d’écrire des tactiques de résolution directement sous la forme de termes d’Agda.
+
+La deuxième solution consiste à implémenter une fonction permettant d’appeler Canonical directement dans le code Haskell d’Agda. 
+Nous récupérons alors les types des buts dans la syntaxe interne des termes d’Agda puis, après une passe de transformation, 
+transmettons le type du but à Canonical depuis notre prototype en Haskell vers l’implémentation en Rust de Canonical.
+
+Comme nous souhaitons que notre prototype soit facilement utilisable, nous avons choisi de nous inspirer de la méthode employée, 
+en partie, par Mimer et de nous concentrer sur la deuxième solution.
+Cela nous permet, à l'instar de la commande C-c C-a pour invoquer Mimer, d'invoquer Canonical via la commande C-c C-g du mode Agda de Emacs.
 
 \subsection{Cibles de la traduction}
 La théorie des types de Agda étant différente de celle de Lean, 
-nous devons adapter les techniques présentées dans \cite{norman2025canonical} pour faire notre traduction.
+nous devons adapter les techniques présentées dans les travaux de Norman et Avigad \cite{norman2025canonical} pour faire notre traduction.
 
 \subsubsection{La syntaxe interne d'Agda}
 Agda possède plusieurs syntaxes différentes pour représenter ses termes. 
-Dans notre cas, nous nous interessons à un sous-ensemble de la syntaxe dite interne des termes dont une version simplifiée est montrée en figure \ref{fig:internal}.
-Le sous-ensemble en question est décrit par quatres types mutuellement récurssif représentant les termes, les sortes, les types d'univers et les eliminateurs.
+Dans notre cas, nous nous intéressons à un sous-ensemble de la syntaxe dite interne des termes, 
+dont une version simplifiée est présentée dans la figure \ref{fig:internal}.
+
+Le sous-ensemble en question est décrit par quatre types mutuellement récursifs représentant respectivement les termes, 
+les sortes, les types d’univers et les éliminateurs.
 
 \begin{figure}[h]
 \centering
@@ -733,30 +755,31 @@ data Univ
 \end{figure}
 
 \paragraph{Les termes.}
-Les termes sont composés des variables (indices de de Bruijn), potentiellement appliqués à divers arguments, des $\lambda$-abstractions, 
-ainsi que du type des fonctions dépendantes.
+Les termes sont composés de variables, représentées par des indices de De Bruijn \cite{de1972lambda}, 
+potentiellement appliquées à différents arguments, de $\lambda$-abstractions, ainsi que du type des fonctions dépendantes. 
+Ils comprennent également des définitions, telles que les noms de fonctions ou de types inductifs, ainsi que des constructeurs, 
+qui peuvent, eux aussi, être appliqués à différents arguments. Enfin, les termes peuvent contenir des sortes et des niveaux d’univers.
 
-Ils sont également composés des définitions (noms de fonctions, noms de datatype, etc.) et des constructeurs, pouvant aussi être appliqués à divers arguments.
-
-Enfin, les termes contiennent également les sortes et les niveaux d'univers.
-
-Dans la syntaxe réelle, les termes contiennent également d'autres constructions que nous n'aborderons pas dans ce travail.
+Dans la syntaxe réelle, les termes contiennent également d’autres constructions, 
+telles que les littéraux ou les méta-variables, que nous n’aborderons pas dans ce travail.
 
 \paragraph{Les éliminateurs.}
-Au sein d'Agda, le type des éliminateurs permettent de représenter les applications de fonctions, les projections (types enregistrements) et les applications de chemin cubiques.
+Au sein d'Agda, le type des éliminateurs permettent de représenter les applications de fonctions, 
+les projections (types enregistrements) et les applications de chemin cubiques.
 Pour le moment, nous ne nous interessons qu'aux applications.
 
 
 \paragraph{Les sortes et types d'univers.}
-Pour ce stage, nous avons choisi de restreindre notre prototype qu'aux sortes en liens avec les petits univers et leurs niveaux.
-Nous expliquons ce choix par le fait que la majorité des cas testé ne présentaient pas de sortes autres que celles-ci.
-De plus, au vue de la gestion des univers par Canonical (que nous détaillerons par la suite), 
-ajouter du support pour les autres construction ne ferait qu'ajouter du bruit à la recherche de terme.
+Pour ce stage, nous avons choisi de restreindre notre prototype aux seules sortes liées aux petits univers et à leurs niveaux.
+
+Nous expliquons ce choix par le fait que la majorité des cas testés ne présentaient pas d’autres sortes que celles-ci. 
+De plus, au vu de la gestion des univers par Canonical, que nous détaillerons par la suite, 
+ajouter la prise en charge d’autres constructions ne ferait qu’ajouter du bruit à la recherche de termes.
 
 
 
 \subsubsection{La cible.}
-Canonical est fourni avec une couche de compatibilité permettant de faire le lien avec le coeur du prouver tout en gardant une syntaxe plus agréable à utiliser.
+Canonical est fourni avec une couche de compatibilité permettant de faire le lien avec le coeur du prover tout en gardant une syntaxe plus agréable à utiliser.
 La figure \ref{fig:can-comp} montre la syntaxe pour représenter les termes et les types au sein de la couche de compatibilité en syntaxe Haskell.
 
 \begin{figure}[h]
@@ -795,42 +818,43 @@ data CSpine = CSpine
 \end{figure}
 
 \paragraph{CDecl.}
-Ce type décrit les déclaration de la forme $(x : A)$.
-Il est composé d'un symbole, optionnellement d'un type et d'équations.
+Ce type décrit les déclarations de la forme $\mathsf{(x : A)}$.
+Il est composé d'un symbole, éventuellement d'un type, et d'équations.
 
-Si le champs typ n'est pas renseigné, cela peut signifier deux choses : 
-Dans le cas d'une déclaration let, ça indique à Canonical que le symbole ne devrait pas être utilisé pour construire le résultat.
-Dans le cas d'un paramettre, que l'expression a laquelle la déclaration appartient représente un terme et non pas un type.
+Si le champ \texttt{typ} n'est pas renseigné, cela peut avoir deux significations.
 
-Les équations associées aux déclarations ont une interprétation qui dépendant également du champ auquel les déclarations sont associées : 
-Dans le cas d'une déclaration let, les équations représentent les règles de réductions associées au symbole (e.g. définition de fonction).
-Dans le cas d'un paramètre, elles représentent des contraintes de réduction sur ce parametre.
+Dans le cas d'une déclaration \texttt{let}, cela indique à Canonical que le symbole ne doit pas être utilisé pour construire le résultat.
+Dans le cas d'un paramètre, cela signifie que l'expression à laquelle la déclaration appartient représente un terme et non un type.
+
+L'interprétation des équations associées aux déclarations dépend également du champ auquel ces dernières sont associées.
+Dans le cas d'une déclaration \texttt{let}, les équations représentent les règles de réduction associées au symbole (e.g. définition d'une fonction).
+Dans le cas d'un paramètre, elles représentent des contraintes de réduction sur ce paramètre.
 
 \paragraph{CEquation.}
-Ce type représente une règle de la forme $lhs = rhs$ à travers deux spines.
-Par exemple, la déclaration associée à la fonction $not : Bool \to Bool$, définie par $not~True = False$ et $not~False = True$,
-possèdera deux équations dont les membres de gauche seront $CSpine~"not"~[trueExpr]$ (resp. $CSpine~"not"~[falseExpr]$) et les membres de droites seront
-$CSpine~"False"~[]$ (resp. $CSpine~"True"~[]$). 
+Ce type représente une règle de la forme $\mathsf{lhs = rhs}$ à travers deux spines (un symbole de tête et une liste arguments).
+Par exemple, la déclaration associée à la fonction $\mathsf{not : Bool \to Bool}$, définie par $\mathsf{not~True = False}$ et $\mathsf{not~False = True}$,
+possèdera deux équations dont les membres de gauche seront $\mathsf{CSpine~``not''~[trueExpr]}$ (resp. $\mathsf{CSpine~``not''~[falseExpr]}$) 
+et les membres de droites seront $\mathsf{CSpine~``False''~[]}$ (resp. $\mathsf{CSpine~``True''~[]}$). 
 
 
 \paragraph{CExpr.}
-Ce type représente à la fois les termes et les types de Canonical que nous avons introduit en sous-section 2.1.
-La distinction entre des termes et des types se voit au sein des champs params et lets. 
-Contrairement aux types, un terme ne possèderas pas d'annotations de types dans ses champs.
+Ce type représente à la fois les termes et les types de Canonical que nous avons introduits dans la sous-section 2.1.
+La distinction entre les termes et les types s'effectue au niveau des champs \texttt{params} et \texttt{lets}.
+Contrairement aux types, un terme ne possédera pas d'annotations de type dans ces champs.
 
 \paragraph{CSpine.}
-Les spines sont composées d'un symbole de tête et d'une liste d'arguments. 
-Elles représentent le corps des types / termes de Canonical.
+Les spines sont composées d'un symbole de tête et d'une liste d'arguments.
+Elles représentent le corps des types et des termes de Canonical.
 
 \subsection{La traduction.}
-Maintenant que nous avons vu le langage source et la cible, interessons nous à la traduction en elle-même.
-Notre traduction se découpe en trois fonctions mutuellement récursives pemettant de transformer des termes en déclaration $toCDecl$, en expression $toCExpr$ ou en spine $toCSpine$.
+Maintenant que nous avons présenté les langages source et cible, intéressons-nous à la traduction elle-même.
+Notre traduction se décompose en trois fonctions mutuellement récursives permettant respectivement de transformer des termes en déclarations 
+\texttt{toCDecl}, en expressions \texttt{toCExpr} ou en spines \texttt{toCSpine}.
 
 \paragraph{Le point d'entrée.}
-Canonical attend pour son Goal une déclaration, notre point d'entrée est donc la fonction toCDecl dont l'implémentation en Haskell est présentée en figure \ref{fig:agda-toCDecl}.
-Celle-ci va simplement prendre un nom, un terme à convertir et un ensemble d'équations, 
-appeler la fonction toCExpr sur le terme à convertir et créer la structure CDecl correspondante.
-Les autres arguments de la fonction servent pour des processus que nous détaillerons plus tard.
+Canonical attend une déclaration en entrée pour effectuer son traitement. Notre point d'entrée est donc la fonction \texttt{toCDecl}, dont l'implémentation en Haskell est présentée en figure \ref{fig:agda-toCDecl}.
+Celle-ci prend simplement en arguments un nom, un terme à convertir et un ensemble d'équations. Elle appelle ensuite la fonction \texttt{toCExpr} sur le terme à convertir afin de construire la structure \texttt{CDecl} correspondante.
+Les autres arguments de la fonction sont utilisés dans des processus que nous détaillerons par la suite.
 
 
 
@@ -853,113 +877,155 @@ toCDecl t name eqs bindnames lets ald tplvl = do
 \end{figure}
 
 \subsubsection{Conversion en termes de Canonical}
-La fonction toCExpr a pour but premier de créer la liste de parametre qu'il y a dans un terme / type de Canonical.
-Pour ce faire, la fonction parcours le terme en gardant en mémoire les paramètres créés jusqu'à ce qu'elle rencontre un terme qui ne créé pas de paramètres.
+La fonction \texttt{toCExpr} a pour objectif principal de construire la liste des paramètres présents dans un terme ou un type de Canonical.
+Pour ce faire, la fonction parcourt le terme en conservant les paramètres déjà créés jusqu'à ce qu'elle rencontre un terme qui n'en crée pas de nouveau.
 
 \paragraph{Termes créant des paramètres.}
-Il y deux constructeurs qui se traduisent en termes de Canonical : Lam et Pi.
-Dans le cas de Lam, il suffit d'ajouter une déclaration contenant seulement le nom de la variable à la liste des paramètres et de s'appeler récursivement sur le terme sous jacent.
-Dans le cas de Pi, il faut distinguer deux cas : 
-Si nous sommes en train de convertir le terme vers un type, il suffit de convertir le domaine du Pi vers une CDecl, 
-de l'ajouter au paramètres et d'appeler récursivement toCExpr sur le codomaine.
-Si nous sommes en train de convertir vers un terme, il faut traduire le termes avec le procédé décrit dans la section 4.1 de \cite{norman2025canonical}.
-Cette fonctionnalité n'a pas encore été implémentée dans notre prototype.
-La distinction entre traduction vers termes ou type se fait en fonction de la fonction appelant toCExpr : 
-Si c'est toCDecl qui l'appelle, cela signifie que nous somme en train de convertir effectivement un type.
-Dans le cas contraire, c'est que la fonction a été appelée par toCSpine et que nous sommes en train de convertir des arguments de fonctions, donc des termes.
+Deux constructeurs se traduisent en termes de Canonical : \texttt{Lam} et \texttt{Pi}.
+Dans le cas de \texttt{Lam}, il suffit d'ajouter à la liste des paramètres une déclaration contenant uniquement le nom de la variable, puis de s'appeler récursivement sur le terme sous-jacent.
+Dans le cas de \texttt{Pi}, deux situations doivent être distinguées.
+Si nous sommes en train de convertir le terme en un type, il suffit de convertir le domaine du \texttt{Pi} en une \texttt{CDecl}, de l'ajouter aux paramètres, puis d'appeler récursivement \texttt{toCExpr} sur le codomaine.
+Si nous sommes en train de convertir le terme en un terme, il faut le traduire selon le procédé décrit dans la section 4.1 de \cite{norman2025canonical}. Cette fonctionnalité n'a pas encore été implémentée dans notre prototype.
+La distinction entre la traduction vers un terme ou vers un type s'effectue en fonction de la fonction appelant \texttt{toCExpr}.
+Si celle-ci est appelée par \texttt{toCDecl}, cela signifie que nous sommes en train de convertir un type.
+Dans le cas contraire, \texttt{toCExpr} a été appelée par \texttt{toCSpine} et nous sommes en train de convertir les arguments d'une fonction, qui sont donc des termes.
 
 \paragraph{Autres constructeurs.}
-Dans le cas ou toCExpr est appelé sur d'autre constructeur que Pi et Lam, cela signifie que tous les paramètres ont été dépliés.
-Il faut donc convertir le termes vers une spine (constructeur de tête et arguments) et créer la CExpr en mettant les paramètres avec la spine.
+Dans le cas ou \texttt{toCExpr} est appelé sur d'autre constructeur que \texttt{Pi} et \texttt{Lam}, cela signifie que tous les paramètres ont été dépliés.
+Il faut donc convertir le termes vers une spine (constructeur de tête et arguments) et créer la \texttt{CExpr} en mettant les paramètres avec la spine.
 
-Un point que nous n'avons pas encore abordé concerne la gestion du contexte du Goal.
+Un point que nous n'avons pas encore abordé concerne la gestion du contexte du but.
 Celui-ci sert à mettre tout ce qui est en lien avec les constantes, les fonctions externes, les datatypes et les constructeurs.
-Notre stratégie consite à mettre tout cet environnement sur l'expression correspondant au type du goal. 
+Notre stratégie consiste à mettre tout cet environnement sur l'expression correspondant au type du goal. 
 L'environnement se construisant tout au long de la conversion du terme, nous devons le garder en mémoire et l'ajouter qu'à la toute fin de la traduction,
 après avoir converti la spine du goal.
 Nous détaillerons la construction de l'environnement par la suite.
 
 \subsubsection{Conversion en spine.}
-La fonction toCSpine sert à convertir les termes de Agda vers un symboles de tête et ses potentiels arguments.
-Étant seulement appellée par la fonction toCExpr après avoir déplié tous les Pi et Lam, il nous suffit de seulement traiter les variables, les sortes, les niveaux d'univers, les constructeurs et les définitions.
-Pour rappel, les CSpine sont constitué d'un symboles de tête (représenté par une chaîne de caractères) et d'une liste d'arguments (liste de CExpr).
+La fonction \texttt{toCSpine} sert à convertir les termes de Agda vers un symboles de tête et ses potentiels arguments.
+Étant seulement appellée par la fonction \texttt{toCExpr} après avoir déplié tous les \texttt{Pi} et \texttt{Lam}, 
+il nous suffit de seulement traiter les variables, les sortes, les niveaux d'univers, les constructeurs et les définitions.
+Pour rappel, les \texttt{CSpine} sont constitués d'un symbole de tête (représenté par une chaîne de caractères) et d'une liste d'arguments (liste de \texttt{CExpr}).
 
 \paragraph{Les variables.}
-Dans la syntaxe interne de Agda, une variable est représentée par un indice de de Bruijn et une liste d'éliminateurs.
-Ayant restreints les éliminateurs aux applications pour le moment, nous obtenons un termes déjà très proche d'une spine.
-Il nous suffit donc de convertir la liste d'éliminateurs en transformant chaque termes de la liste en CExpr, 
-puis de construire la spine en mettant le nom associé à l'indice de de Bruijn avec les arguments convertis.
+Dans la syntaxe interne de Agda, une variable est représentée par un indice de De Bruijn et une liste d'éliminateurs.
+Ayant restreint les éliminateurs aux applications pour le moment, nous obtenons un terme déjà très proche d'une spine.
+Il nous suffit donc de convertir la liste d'éliminateurs en transformant chaque terme de la liste en \texttt{CExpr}, 
+puis de construire la spine en mettant le nom associé à l'indice de De Bruijn avec les arguments convertis.
 
 \paragraph{Les définitions et constructeurs.}
-Les termes Def correspondent aux symboles étant rattachés à une définition comme les axiomes (introduits avec le mot clé postulate en Agda), 
-les fonctions définies par l'utilisateurs, le fonctions primitive ou encore les datatypes.
-Pour le moment notre protoype ne gère pleinement que les cas ou la définition correspond à un datatype ou un constructeurs, 
-cependant nous pensons que la technique présenté peut-être facilement adaptée pour gérer les autres cas.
+Les termes \texttt{Def} correspondent aux symboles étant rattachés à une définition comme les axiomes (introduits avec le mot clé \textit{postulate} en Agda), 
+les fonctions définies par l'utilisateur, les fonctions primitives ou encore les datatypes.
+Pour le moment notre prototype ne gère pleinement que les cas ou la définition correspond à un datatype ou un constructeur, 
+cependant nous pensons que la technique présentée peut-être facilement adaptée pour gérer les autres cas.
 
-Lorsque l'en rencontre un symbole correspondant a un datatype, 
-on récupère le terme correspondant au type de ce datatype et on ajoute au contexte une déclaration contenant le symbole et le termes converti en CExpr.
-On récupère par la suite la liste des constructeurs associés à ce datatype et on les ajoutes également au contexte via un procédé similaire.
+Lorsque l'en rencontre un symbole correspondant à un datatype, 
+on récupère le terme correspondant au type de ce datatype et on ajoute au contexte une déclaration contenant le symbole et le terme converti en CExpr.
+On récupère par la suite la liste des constructeurs associés à ce datatype et on les ajoute également au contexte via un procédé similaire.
 
-Si on voulait convertir un symbole possèdant une définition (comme une fonction définie par l'utilisateur), 
-il suffirait de récupérer les différentes clauses de cette fonction et de les convertir en CEquations.
-N'ayant pas effectuer cette implémentation pour le moment, nous ne détaillerons pas plus ce procédé.
+Si on voulait convertir un symbole possédant une définition (comme une fonction définie par l'utilisateur), 
+il suffirait de récupérer les différentes clauses de cette fonction et de les convertir en \texttt{CEquations}.
+N'ayant pas effectué cette implémentation pour le moment, nous ne détaillerons pas plus ce procédé.
 
 \paragraph{Les univers et leurs niveaux.}
 Comme indiqué dans \cite{norman2025canonical}, Canonical ne gère pas les niveaux d'univers.
-Nous fournissons donc simplement à Canonical un objet \textbf{Type} ne possèdant pas de type dans son contexte.
-De cette manière, Canonical n'essaiera pas de typer les éléments de type Type et n'utiliseras pas Type pour construire ses termes.
+Nous fournissons donc simplement à Canonical un objet \textbf{Type} ne possédant pas de type dans son contexte.
+De cette manière, Canonical n'essaiera pas de typer les éléments de type \texttt{Type} et n'utiliseras pas \texttt{Type} pour construire ses termes.
 
 
 \section{Cubical Agda}
-Maintenant que nous avons un protoype fonctionnant pour les fonctionnalités basiques de Agda, 
+Maintenant que nous avons un prototype pour les fonctions basiques de Agda, 
 nous nous intéressons à son application pour la théorie cubique des types.
 
-\paragraph{Le type interval.}
-La première étape vers l'utilisation de Canonical pour la théorie cubique des types est le support de l'algèbre de de Morgan libre de l'interval.
-Nous ajoutons donc au contexte que nous fournissons à Canonical trois déclarations $(I : \_)$, $(i0 : I)$ et $(i1 : I)$, 
-représentant respectivement le type interval, l'élément 0 et l'élément 1. 
+\paragraph{Le type intervalle.}
+La première étape vers l'utilisation de Canonical pour la théorie cubique des types est le support de l'algèbre de De Morgan libre de l'intervalle.
+Nous ajoutons au contexte que nous fournissons à Canonical trois déclarations $\mathsf{(I : \_)}$, $\mathsf{(i0 : I)}$ et $\mathsf{(i1 : I)}$, 
+représentant respectivement le type intervalle, l'élément \texttt{0} et l'élément \texttt{1}. 
 
 Nous ajoutons également des déclarations pour les fonctions suivantes :
-$(primINeg : I \to I) {primINeg i0 = i1; primINeg i1 = i0; primINeg (primIMax i j) = primIMin (primINeg i) (primINeg j); primINeg (primIMin i j) = primIMax (primINeg i) (primINeg j)}$ 
-
-$(primIMin : I \to I \to I) {primIMin i0 j = i0; primIMin i1 j = j; primIMin j i0 = i0; primIMin j i1 = j}$ 
-
-$(primIMax : I \to I \to I) {primIMax i0 j = j; primIMax i1 j = i1; primIMax j i0 = j; primIMax j i1 = i1}$ 
-
-A présent que nous avons une représentation du type interval, nous nous interessons à la gestion des types d'égalité (aussi appelé path type dans CTT).
+\begin{itemize}
+  \item $\mathsf{(primINeg : I \to I)}$
+    \begin{itemize}
+      \item $\mathsf{primINeg~i0 = i1}$ 
+      \item $\mathsf{primINeg~i1 = i0}$
+      \item $\mathsf{primINeg~(primIMax~i~j) = primIMin~(primINeg~i)~(primINeg~j)}$ 
+      \item $\mathsf{primINeg~(primIMin~i~j) = primIMax~(primINeg~i) (primINeg~j)}$ 
+    \end{itemize}
+  \item $\mathsf{(primIMin : I \to I \to I)}$
+    \begin{itemize}
+      \item $\mathsf{primIMin~i0~j = i0}$ 
+      \item $\mathsf{primIMin~i1~j = j}$ 
+      \item $\mathsf{primIMin~j~i0 = i0} $
+      \item $\mathsf{primIMin~j~i1 = j}$ 
+    \end{itemize}
+  \item $\mathsf{(primIMax : I \to I \to I)}$
+    \begin{itemize}
+      \item $\mathsf{primIMax~i0~j = j}$ 
+      \item $\mathsf{primIMax~i1~j = i1}$ 
+      \item $\mathsf{primIMax~j~i0 = j} $
+      \item $\mathsf{primIMax~j~i1 = i1}$ 
+    \end{itemize}
+\end{itemize}
+Comme leurs noms l'indiquent, ces fonctions représentent la négation, le max et le min sur l'intervalle.
+À présent que nous avons une représentation du type intervalle, 
+nous nous intéressons à la gestion des types d'égalité (aussi appelé path type dans CTT).
 
 \subsection{Représentation des path types}
-La première voie que nous avons explorer pour représenter les path type passe par l'utilisation d'un constructeur et d'un destructeur pour les paths type.
-Pour ce faire, nous ajoutons au contexte de Canonical un constructeur 
-$makePath : (\ell : Level) \to (A : Type \ell) \to (x : A) \to (y : A) \to (p : I \to A){p i0 = x; p i1 = y} \to x \equiv y$ 
-ainsi qu'un destructeur 
-$destructPath : (\ell : Level) \to (A : Type \ell) \to (x : A) \to (y : A) \to (p : x \equiv y) \to (i : I) \to A$
+La première voie que nous avons explorée pour représenter les path type passe par l'utilisation d'un constructeur et
+d'un destructeur pour les path type.
+Pour ce faire, nous ajoutons au contexte de Canonical un constructeur
+\[
+\mathsf{makePath} :
+(\ell : Level) \to
+(A : Type\ \ell) \to
+(x : A) \to
+(y : A) \to
+(p : I \to A)
+\{p~i0 = x; p~i1 = y\}
+\to x \equiv y
+\]
+ainsi qu'un destructeur
+\[
+\mathsf{destructPath} :
+(\ell : Level) \to
+(A : Type\ \ell) \to
+(x : A) \to
+(y : A) \to
+(p : x \equiv y) \to
+(i : I) \to A
+\]
 avec les règles de réduction :
-$destructPath \ell A x y p i0 = x$ et 
-$destructPath \ell A x y p i1 = y$.
+\[
+\begin{aligned}
+\mathsf{destructPath}\ \ell\ A\ x\ y\ p\ i0 &= x,\
+\mathsf{destructPath}\ \ell\ A\ x\ y\ p\ i1 &= y.
+\end{aligned}
+\]
 
-Le constructeur sert a forcer Canonical a fournir une fonction $p : I \to A$ avec les bonnes extrémité comme témoin pour justifier une égalité
-et le destructeur sert à imiter le comportement d'un path type.
+Le constructeur sert à contraindre Canonical à fournir une fonction $\mathsf{p : I \to A}$ ayant les bonnes extrémités comme témoin pour justifier une égalité, 
+tandis que le destructeur sert à imiter le comportement d'un path type.
 
-Bien que cette approche fonctionne sur des cas simple, celle-ci à vite montré ses limites sur des obligations de preuves plus compliquées.
-En plus d'alourdir fortement les preuves fournies par Canonical, l'ajout des constructeur et destructeur grossi l'arbre de recherche de termes de Canonical.
-Nous avons donc choisi d'adopter une représentation plus proche de l'utilisation réèlle.
+Bien que cette approche fonctionne sur des cas simples, celle-ci a rapidement montré ses limites face à des obligations de preuve plus complexes.
+En plus d'alourdir fortement les preuves produites par Canonical, 
+l'ajout des constructeurs et destructeurs augmente la taille de l'arbre de recherche de termes de Canonical. 
+Nous avons donc choisi d'adopter une représentation plus proche de l'utilisation réelle des types de chemins.
 
-La deuxième solution que nous avons adoptée consiste à remplacer tous les occurences du type $x \equiv y$ par le type $I \to A$ 
-et d'utiliser les contraintes builtin de Canonical pour spécifier le comportement de la fonction sur les points extrêmes de l'interval.
-Par exemple, un objet $(p : x \equiv y)$ deviendra une fonction $(p : I \to A)$ avec comme contraintes $p i0 = x$ et $p i1 = y$.
+La deuxième solution que nous avons adoptée consiste à remplacer toutes les occurrences du type $\mathsf{x \equiv y}$ par le type $\mathsf{I \to A}$, 
+et à utiliser les contraintes natives de Canonical pour spécifier le comportement de la fonction aux extrémités de l'intervalle.
+Par exemple, un objet $\mathsf{(p : x \equiv y)}$ devient une fonction $\mathsf{(p : I \to A)}$ accompagnée des contraintes $\mathsf{p~i0 = x}$ et $\mathsf{p~i1 = y}$.
 
 \subsection{Contraintes de cohérence.}
-Lorsqu'on travaille en théorie cubique des types, un enjeu majeur est la contrainte de termes sur les extrémités.
-Par exemple, interessons nous à la preuves de l'extensionnalité des fonctions.
-Cet énnoncé prouvable en théorie cubique des types dit que deux fonctions égales point par point sont égales (au sein du type des fonctions).
+Lorsqu'on travaille en théorie cubique des types, un enjeu majeur réside dans la gestion des contraintes imposées aux termes sur les extrémités de l'intervalle.
 
-Pour prouver une égalité entre fonctions deux fonctions $(f g : A \to B)$  en CTT, il faut donner une fonction $(h : I \to (A \to B))$ telle que $h i0 = f$ et $h i1 = g$.
-En introduisant une variable $(a : A)$, cela revient a donner comme contrainte que $h i0 a = f a$  et $h i1 a = g a$.
+Par exemple, intéressons-nous à la preuve de l'extensionnalité des fonctions. Cet énoncé, prouvable en théorie cubique des types, stipule que deux fonctions égales point par point sont égales au sein du type des fonctions.
 
-Nous montrons en figure \ref{fig:agda-fe} un type décrivant l'extensionnalité des fonctions en Agda. 
-Comme toutes les variables ont été introduites, le type du but est simplement $B$. 
-Si l'on fourni tel quel le but a Canonical, celui-ci n'a auucne connaisance des contraintes que nous avons évoquées.
+Pour prouver une égalité entre deux fonctions $\mathsf{(f~g : A \to B)}$ en CTT, 
+il faut fournir une fonction $\mathsf{(h : I \to (A \to B))}$ telle que $\mathsf{h~i0 = f}$ et $\mathsf{h~i1 = g}$.
+En introduisant une variable $\mathsf{(a : A)}$, cela revient à imposer les contraintes $\mathsf{h~i0~a = f~a}$ et $\mathsf{h~i1~a = g~a}$.
+
+Nous présentons en figure \ref{fig:agda-fe} un type décrivant l'extensionnalité des fonctions en Agda.
+Comme toutes les variables ont été introduites, le type du but est simplement $\mathsf{B}$.
+Si l'on fournit tel quel le but à Canonical, celui-ci n'a aucune connaissance des contraintes que nous venons d'évoquer.
 
 \begin{figure}[h]
 \centering
@@ -971,7 +1037,7 @@ fe A B f g p i a = { }0
 \label{fig:agda-fe}
 \end{figure}
 
-Pour palier a ce problème, nous nous servons directement d'une fonctionnalité d'Agda.
+Pour palier ce problème, nous nous servons directement d'une fonctionnalité d'Agda.
 Dans un tel but, Agda calcule les contraintes que nous avons mentionnées et les affiches à l'utilisateur.
 En reprenant l'exemple de la figure \ref{fig:agda-fe}, Agda affiche à l'utilisateur $ (i = i0) \vdash f a$ et $(i = i1) \vdash g a$.
 En l'état, il n'est pas possible de spécifier à Canonical de telle contraintes.
