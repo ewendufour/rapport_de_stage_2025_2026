@@ -8,6 +8,8 @@
 \usepackage{amsmath, amssymb}
 \usepackage{xcolor}
 \usepackage{minted}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, calc}
 \definecolor{link_color}{RGB}{0,0,200}
 
 \usepackage[bookmarks=true,colorlinks=true,
@@ -225,6 +227,75 @@ Dans le but de regagner cette propriété de constructivité, la théorie cubiqu
 Celle ci ajoute un nouveau type I représentant l'interval $[0; 1]$ et donne une nouvelle interprétation à l'égalité .
 Une preuve d'égalité entre deux termes $x$ et $y$ au sein d'un type $A$ est interprêtée par une fonction de l'interval vers le type $A$ qui,
 lorsque évaluée en 0 (resp. 1) doit être définitionnelement égal à x (resp. y).
+Pictorallement, une égalité en théorie cubique des types peut être vue comme une arête, 
+une égalité entre égalité (une fonction de $I \times I \to A$) comme un carré, 
+une fonction de $I \times I \times I \to A$ comme un cube, etc 
+
+
+
+% ============================================================
+% Figure 1 : un terme p : a = b comme un chemin (arête)
+% ============================================================
+\begin{tikzpicture}[scale=1.4]
+ 
+  % Points
+  \coordinate (a) at (0,0);
+  \coordinate (b) at (4,0);
+ 
+  % L'arête = le chemin p
+  \draw[thick, -{Latex[length=2mm]}] (a) -- (b) node[midway, above] {$p$};
+ 
+  % Extrémités
+  \filldraw (a) circle (1.2pt) node[below] {$a$};
+  \filldraw (b) circle (1.2pt) node[below] {$b$};
+ 
+  % Paramétrisation par l'intervalle
+  \draw[dashed, gray] (a) ++(0,-0.9) -- ++(4,0)
+    node[pos=0, below] {$i0$} node[pos=1, below] {$i1$};
+  \node[gray] at (2,-0.9-0.35) {$i : \mathbb{I}$};
+ 
+  \node at (2, 0.8) {$p : a =_A b \quad\Longleftrightarrow\quad p : \mathbb{I} \to A,\ p(i0)=a,\ p(i1)=b$};
+ 
+\end{tikzpicture}
+ 
+\bigskip
+ 
+% ============================================================
+% Figure 2 : une égalité entre égalités comme un carré
+%   alpha : p = q  (p, q : a = b)
+% ============================================================
+\begin{tikzpicture}[scale=1.4]
+ 
+  % Sommets du carré (bord constant à gauche/droite : a et b)
+  \coordinate (a0) at (0,0);   % (i0,j0)
+  \coordinate (a1) at (0,3);   % (i0,j1)
+  \coordinate (b0) at (4,0);   % (i1,j0)
+  \coordinate (b1) at (4,3);   % (i1,j1)
+ 
+  % Face intérieure = la 2-cellule alpha
+  \fill[gray!12] (a0) -- (b0) -- (b1) -- (a1) -- cycle;
+ 
+  % Bord bas : chemin p
+  \draw[thick, -{Latex[length=2mm]}] (a0) -- (b0) node[midway, below] {$p$};
+  % Bord haut : chemin q
+  \draw[thick, -{Latex[length=2mm]}] (a1) -- (b1) node[midway, above] {$q$};
+  % Bords gauche/droit : chemins constants (refl)
+  \draw[thick] (a0) -- (a1) node[midway, left] {$\mathsf{refl}_a$};
+  \draw[thick] (b0) -- (b1) node[midway, right] {$\mathsf{refl}_b$};
+ 
+  % Sommets
+  \foreach \pt/\lbl/\pos in {a0/a/below left, b0/b/below right, a1/a/above left, b1/b/above right}
+    \filldraw (\pt) circle (1.2pt) node[\pos] {$\lbl$};
+ 
+  % Nom de la 2-cellule au centre
+  \node at (2,1.5) {$\alpha$};
+ 
+  % Paramétrisation
+  \node[gray] at (2,-0.6) {$(i,j) : \mathbb{I} \times \mathbb{I}$};
+ 
+  \node at (2, 3.7) {$\alpha : p =_{a =_A b} q$};
+ 
+\end{tikzpicture}
 
 A notre connaissance, la seule implémentation sur un assistant de preuve répendu de la théorie cubique des types est celle fournie par Cubical Agda \cite{vezzosi2019cubical}.
 
@@ -704,14 +775,126 @@ Le but 0 de la figure \ref{fig:agda-fe} passerais de $(Goal : B)$ à $(Goal : I 
 Pour revenir au but initial, il suffit de redéplier le termes fourni par canonical en se débarassant des abstraction que nous avons ajouté.
 
 \subsection{La composition homogène}
-Un autre ingrédient clef de la théorie cubique des types l'operateur de composition des chemins.
+Un autre ingrédient clef de la théorie cubique des types l'operateur de composition homogène.
+Introduit dans le CCHM \cite{cohen2016cubical}, cet operateur permet de fermer des cubes ouvert en n-dimensions,
+il suffit de lui spécifier un ensemble de faces cohérentes entre elles ainsi qu'une base pour justifier la face manquante.
+
+Par exemple, en figure \ref{fig:hcomp}, les faces de gauche, droite et bas on été fournie au hcomp et il fourni la face du haut.
+Commme mentionné, pour que cet opérateur fonctionne, les faces fournies doivent être cohérentes aux endroits ou elles se touchent.
+Supposons que $i = i0$ et $j = i0$ (le coin en bas a gauche), deux aretes se touchent et doivent désigner un même terme (ici a).
+
+En dimension 3, cette cohérence s'applique non plus a des coins mais a des aretes entière, en dimension 4, a des faces etc..
 
 
+\begin{figure}[h]
+\begin{tikzpicture}[scale=1.4]
+ 
+  % Sommets
+  \coordinate (a0) at (0,0);   % (i0,j0) = a
+  \coordinate (b0) at (4,0);   % (i0,j1) = b
+  \coordinate (a1) at (0,3);   % (i1,j0) = a   (bord gauche constant)
+  \coordinate (c1) at (4,3);   % (i1,j1) = c
+ 
+  % Intérieur : le remplissage (filler), en pointillé/grisé = "ouvert"
+  \fill[gray!10] (a0) -- (b0) -- (c1) -- (a1) -- cycle;
+ 
+  % Bord bas (i = i0) : DONNÉ = p
+  \draw[thick, -{Latex[length=2mm]}] (a0) -- (b0) node[midway, below] {$p$};
+  % Bord gauche (j = i0) : DONNÉ = constant a
+  \draw[thick] (a0) -- (a1) node[midway, left] {$\mathsf{refl}_a$};
+  % Bord droit (j = i1) : DONNÉ = q
+  \draw[thick, -{Latex[length=2mm]}] (b0) -- (c1) node[midway, right] {$q$};
+  % Bord haut (i = i1) : RÉSULTAT = p . q, en pointillé (calculé, pas donné)
+  \draw[thick, dashed, -{Latex[length=2mm]}] (a1) -- (c1) node[midway, above] {$p \cdot q$};
+ 
+  % Sommets
+  \foreach \pt/\lbl/\pos in {a0/a/below left, b0/b/below right, a1/a/above left, c1/c/above right}
+    \filldraw (\pt) circle (1.2pt) node[\pos] {$\lbl$};
+ 
+  % Axes
+  \draw[gray, -{Latex[length=1.5mm]}] (-1,0) -- (-1,3) node[above] {$i$};
+  \node[gray] at (-1,-0.3) {$i0$};
+  \node[gray] at (-1,3.3) {$i1$};
+  \draw[gray, -{Latex[length=1.5mm]}] (0,-1) -- (4,-1) node[right] {$j$};
+ 
+  \node at (2,3.9) {$\mathsf{hcomp}^{i}\big[(j{=}i0)\mapsto a,\ (j{=}i1)\mapsto q\,i\big]\ (p\,j)$};
+ 
+\end{tikzpicture}
+\label{fig:hcomp}
+\caption{Preuve de la transitivité des chemins.}
+\end{figure}
 
+\subsubsection{La composition homogène avec Canonical}
+Nous avons donc chercher un moyen de fournir à Canonical la possibilité de creer des chemins avec la composition homogène.
+Notre première approche était de fournir a Canonical toute la signature de l'implémentation de cet opérateur dans Agda, 
+qui est décrit en section 3.3 et 3.4 de \cite{vezzosi2019cubical}.
 
+\paragraph{Limites de cette approche.}
+Lorsque nous avons tester cette approche pour prouver la transitivité des chemins, 
+Canonical n'a fourni un résultat qu'au bout de plusieurs minutes.
+La cohérence des faces n'était pas respectée dans le résultat qu'il a fourni.
+Cela s'esplique par le fait qu'Agda fasse ses vérifications en interne et pas seulement au niveau du typechecker,
+la signature seule de l'implémentation n'était donc pas suffisante.
 
+\paragraph{Solution partielle.}
+Pour le moment, nous n'avons pas trouver de moyen pour fournir à Canonical la signature complète de hcomp avec les contraintes de faces.
+Nous avons donc essayer d'utiliser Canonical non plus pour trouver l'entièreté de la solution mais comme aide pour trouver les faces respectant les contraintes.
+Prenons l'exemple en figure \ref{fig:agda-trans}.
+Ici les buts 0 et 1 doivent contenir les faces de gauche et de droite que nous avons décrit en figure \ref{fig:hcomp}.
+En appliquant la technique de repli dont nous avons discuté en section 3.2, 
+nous arrivons a fournir a Canonical toutes les contraintes dont il a besoin et celui-ci fourni un résultat satisfaisant.
+
+Par exemple, le goal 1 à comme contraintes $j = i0 \vdash y$ et $j = i1 \vdash z$ et comme type $A$.
+En repliant $j$ sur le goal on obtient comme but $\Pi (j : I) \to A$ avec comme contraintes $Goal i0 = y$ et $Goal i1 = z$.
+On obtient alors de Canonical $q j$.
+
+\begin{figure}[h]
+\centering
+\begin{minted}[escapeinside=||, mathescape]{agda}
+  trans : (|$\ell$| : Level) |$\to$| (A : Type |$\ell$|) |$\to$| (x y z : A) |$\to$| (p : x |$\equiv$| y) |$\to$| (q : y |$\equiv$| z) |$\to$| x |$\equiv$| z
+  trans |$\ell$| A x y z p q i = 
+    hcomp {|$\ell$|} {A} {~ i |$\vee$| i} (|$\lambda$| j |$\to$| |$\lambda$| {(i = i0) |$\to$| { }0
+                                     ;(i = i1) |$\to$| { }1}) (p i)
+\end{minted}
+\caption{Preuve incomplète de la transitivité des chemins en Cubical Agda}
+\label{fig:agda-trans}
+\end{figure}
+
+\paragraph{Limites de l'approche.}
+Bien que cet approche fonctionne pour des cas simples comme celui de la transitivité, 
+celle-ci se retrouve bloquée lorsque les cas deviennent plus complexes.
+Le cas de la transitivité fonctionne bien car fournir tous les arguments au implicite et la face du bas à hcomp permet à Agda 
+de déduire toutes les contraintes pour les faces qu'ils nous manque.
+Cependant, si une contraintes pour une face dépend d'une autre face pas encore spécifié, Agda ne peut pas déduire la contrainte et laisse une méta-variable à la place.
+En figure \ref{fig:agda-hard}, les buts 0 et 1 sont interdépendants et notre approche ne permet pas de l'illuster.
+
+\begin{figure}[h]
+\centering
+\begin{minted}[escapeinside=||, mathescape]{agda}
+Square : {|$\ell$| : Level} {A : Type |$\ell$|} {w x y z : A}
+       |$\to$| (u : w |$\equiv$| x) (v : y |$\equiv$| z)
+       |$\to$| (r : w |$\equiv$| y) (s : x |$\equiv$| z)
+       |$\to$| Type |$\ell$|
+Square u v r s = PathP (|$\lambda$| i |$\to$| r i |$\equiv$| s i) u v
+
+invSides-filler : {|$\ell$| : Level} {A : Type |$\ell$|} {x y z : A} 
+                  (p : x |$\equiv$| y) (q : x |$\equiv$| z) |$\to$| Square p (inv q) q (inv p)
+invSides-filler {x = x} p q i j =
+  hcomp (|$\lambda$| k |$\to$| |$\lambda$| { (i = i0) |$\to$| { }0
+                 ; (i = i1) |$\to$| q ((~ j) |$\wedge$| k)
+                 ; (j = i0) |$\to$| { }1 
+                 ; (j = i1) |$\to$| p ((~ j) |$\wedge$| k)})
+        x
+\end{minted}
+\caption{Preuve incomplète en Cubical Agda}
+\label{fig:agda-hard}
+\end{figure}
+
+\section{Conclusion}
+
+\clearpage
 \bibliography{main}
-
+\clearpage
 \appendix
 \section{Code source complémentaire}
 
@@ -766,11 +949,7 @@ toCSpine t bindnames lets ald =
   case t of
     Var i el -> do
       (args, lets, ald) <- elimsToCExpr el bindnames lets ald
-      return $ (
-        CSpine {
-          head = bindnames !! i,
-          args
-         }, lets, ald)
+      return $ ( CSpine (bindnames !! i) args, lets, ald)
     Sort (Type l) -> do
       t' <- reallyUnLevelView l
       (arg, lets, ald) <- toCExpr t' bindnames [] lets ald False False
@@ -782,7 +961,6 @@ toCSpine t bindnames lets ald =
     Level l -> do
       t' <- reallyUnLevelView l
       toCSpine t' bindnames lets ald
-
     Def qname e -> do
       (args, lets, ald) <- elimsToCExpr e bindnames lets ald
       (lets, ald) <- gatherDatatypeInformations qname bindnames lets ald
@@ -791,7 +969,6 @@ toCSpine t bindnames lets ald =
           head = P.prettyShow (qnameName qname),
           args
         }, lets, ald)
-
     Con hd _ e -> do
       infos <- getConstInfo (conName hd)
       let dataname = case theDef infos of
