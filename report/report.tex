@@ -18,6 +18,7 @@
 
 \bibliographystyle{abbrv}
 
+
 \begin{document}
 
 \title{Canonical pour Cubical Agda}
@@ -53,9 +54,9 @@ les énoncés et leurs preuves.
 Au sein de tels systèmes, un énoncé est représenté par un type et une preuve est représentée par un terme habitant ce type.
 Le problème de l'habitation de type devient donc un enjeu majeur dans le domaine de la formalisation automatisée.
 
-Plusieurs outils sont actuellement utilisés pour la recherche de preuves dans les différents assistants. 
-Cependant, aucun logiciel de recherche de preuve ne fonctionne complètement avec la théorie cubique des types, 
-qui est la théorie derrière la version cubical de Agda.
+% Plusieurs outils sont actuellement utilisés pour la recherche de preuves dans les différents assistants. 
+% Cependant, aucun logiciel de recherche de preuve ne fonctionne complètement avec la théorie cubique des types, 
+% qui est la théorie derrière la version cubical de Agda.
 
 Canonical \cite{norman2025canonical} est un logiciel de recherche de preuve 
 se basant sur une théorie des types dépendants dont le format est optimisé pour la recherche de termes.
@@ -68,6 +69,13 @@ Une intégration dans l'assistant de preuve Lean a montré un intérêt pour son
 % What is the report about ? Where does the problem come from ? What is the state of the art in that area ?
 
 \subsection*{Problématique de recherche}
+La théorie cubique des types étant une théorie des types très bas niveau, 
+les preuves que l'on y fait requiers parfois de nombreuses étapes administratives.
+
+Il existe de nombreux logiciels de preuves automatisée se basant sur différentes théories,
+cependant il n'existe pour l'instant aucune intégration pleinement satisfaisante de ceux-ci dans la théorie cubique des types.
+
+Ce travail a pour but de proposer une intégration du logiciel Canonical dans l'assistant de preuve Agda en vue de l'utiliser pour la théorie cubique des types.
 
 % CTT being a very low level type theory, proofs can be really hard to write due to a lot of administrative stuff.
 % There are multiple automated solvers for type inhabitation, but there are no satisfying solver for CTT.
@@ -644,7 +652,7 @@ $(primIMax : I \to I \to I) {primIMax i0 j = j; primIMax i1 j = i1; primIMax j i
 
 A présent que nous avons une représentation du type interval, nous nous interessons à la gestion des types d'égalité (aussi appelé path type dans CTT).
 
-\subsection{Première représentation des path types}
+\subsection{Représentation des path types}
 La première voie que nous avons explorer pour représenter les path type passe par l'utilisation d'un constructeur et d'un destructeur pour les paths type.
 Pour ce faire, nous ajoutons au contexte de Canonical un constructeur 
 $makePath : (\ell : Level) \to (A : Type \ell) \to (x : A) \to (y : A) \to (p : I \to A){p i0 = x; p i1 = y} \to x \equiv y$ 
@@ -654,26 +662,69 @@ avec les règles de réduction :
 $destructPath \ell A x y p i0 = x$ et 
 $destructPath \ell A x y p i1 = y$.
 
-Le constructeur sert a forcer Canonical a fournir une fonction $p : I \to A$ avec les bonnes extrémité comme témoin pour justifier une égalité.
+Le constructeur sert a forcer Canonical a fournir une fonction $p : I \to A$ avec les bonnes extrémité comme témoin pour justifier une égalité
 et le destructeur sert à imiter le comportement d'un path type.
 
+Bien que cette approche fonctionne sur des cas simple, celle-ci à vite montré ses limites sur des obligations de preuves plus compliquées.
+En plus d'alourdir fortement les preuves fournies par Canonical, l'ajout des constructeur et destructeur grossi l'arbre de recherche de termes de Canonical.
+Nous avons donc choisi d'adopter une représentation plus proche de l'utilisation réèlle.
+
+La deuxième solution que nous avons adoptée consiste à remplacer tous les occurences du type $x \equiv y$ par le type $I \to A$ 
+et d'utiliser les contraintes builtin de Canonical pour spécifier le comportement de la fonction sur les points extrêmes de l'interval.
+Par exemple, un objet $(p : x \equiv y)$ deviendra une fonction $(p : I \to A)$ avec comme contraintes $p i0 = x$ et $p i1 = y$.
+
+\subsection{Contraintes de cohérence.}
+Lorsqu'on travaille en théorie cubique des types, un enjeu majeur est la contrainte de termes sur les extrémités.
+Par exemple, interessons nous à la preuves de l'extensionnalité des fonctions.
+Cet énnoncé prouvable en théorie cubique des types dit que deux fonctions égales point par point sont égales (au sein du type des fonctions).
+
+Pour prouver une égalité entre fonctions deux fonctions $(f g : A \to B)$  en CTT, il faut donner une fonction $(h : I \to (A \to B))$ telle que $h i0 = f$ et $h i1 = g$.
+En introduisant une variable $(a : A)$, cela revient a donner comme contrainte que $h i0 a = f a$  et $h i1 a = g a$.
+
+Nous montrons en figure \ref{fig:agda-fe} un type décrivant l'extensionnalité des fonctions en Agda. 
+Comme toutes les variables ont été introduites, le type du but est simplement $B$. 
+Si l'on fourni tel quel le but a Canonical, celui-ci n'a auucne connaisance des contraintes que nous avons évoquées.
+
+\begin{figure}[h]
+\centering
+\begin{minted}[escapeinside=||, mathescape]{agda}
+fe : (A B : Type) |$\to$| (f g : A |$\to$| B) |$\to$| (p : (a : A) |$\to$| f a |$\equiv$| g a) |$\to$| f |$\equiv$| g
+fe A B f g p i a = { }0
+\end{minted}
+\caption{Définition du type de l'extensionnalité des fonctions. }
+\label{fig:agda-fe}
+\end{figure}
+
+Pour palier a ce problème, nous nous servons directement d'une fonctionnalité d'Agda.
+Dans un tel but, Agda calcule les contraintes que nous avons mentionnées et les affiches à l'utilisateur.
+En reprenant l'exemple de la figure \ref{fig:agda-fe}, Agda affiche à l'utilisateur $ (i = i0) \vdash f a$ et $(i = i1) \vdash g a$.
+En l'état, il n'est pas possible de spécifier à Canonical de telle contraintes.
+La solution que nous avons adopté est de replier sur le but les éléments du contexte courant jusqu'à la variable d'interval qui nous interesse et à spécifier les contraintes directement sur la déclaration du goal.
+Le but 0 de la figure \ref{fig:agda-fe} passerais de $(Goal : B)$ à $(Goal : I \to A \to B)$ avec les contraintes $Goal i0 a = f a$ et $Goal i1 a = g a$.
+Pour revenir au but initial, il suffit de redéplier le termes fourni par canonical en se débarassant des abstraction que nous avons ajouté.
+
+\subsection{La composition homogène}
+Un autre ingrédient clef de la théorie cubique des types l'operateur de composition des chemins.
 
 
-\subsection{Deuxième essai}
+
+
 
 \bibliography{main}
 
+\appendix
+\section{Code source complémentaire}
 
 \begin{figure}[h]
 \centering
 \begin{minted}{haskell}
-toCExpr :: Term -> -- ^ Le terme à convertir
-           [String] -> -- ^ Variables liées
-           [CDecl] -> -- ^ Paramètres
-           [CDecl] -> -- ^ Contexte
-           Map String Bool -> -- ^ already seen constructors / definitions
-           Bool -> -- ^ En train de convertir le Goal ?
-           Bool -> -- ^ En train de convertir vers un type ?
+toCExpr :: Term ->           -- ^ Le terme a convertir
+           [String] ->       -- ^ Variables liees
+           [CDecl] ->        -- ^ Parametres
+           [CDecl] ->        -- ^ Contexte
+           Map String Bool -> -- ^ Définitions déjà rencontrées
+           Bool ->           -- ^ En train de convertir le Goal ?
+           Bool ->           -- ^ En train de convertir vers un type ?
            TCM (CExpr, [CDecl], Map String Bool)
 toCExpr t bindnames pidecl letdecl ald tplvl totyp =
   case t of
@@ -698,19 +749,18 @@ toCExpr t bindnames pidecl letdecl ald tplvl totyp =
             lets = if tplvl then reverse lets else [],
             spine
           }, lets, ald)
-
 \end{minted}
-\caption{Traduction des termes en CExpr.}
+\caption{Traduction des termes en \texttt{CExpr}.}
 \label{fig:agda-toCExpr}
 \end{figure}
 
 \begin{figure}[h]
 \centering
 \begin{minted}{haskell}
-toCSpine :: Term -> -- ^ The term to convert
-            [String] -> -- ^ Bound names
-            [CDecl] -> -- ^ Context
-            Map String Bool -> -- ^ Already seen constructors / datatypes
+toCSpine :: Term ->           -- ^ Le termes à convertir
+            [String] ->       -- ^ Les variables liées
+            [CDecl] ->        -- ^ Contexte
+            Map String Bool -> -- ^ Définitions déjà rencontrées
             TCM (CSpine, [CDecl], Map String Bool)
 toCSpine t bindnames lets ald =
   case t of
@@ -719,7 +769,7 @@ toCSpine t bindnames lets ald =
       return $ (
         CSpine {
           head = bindnames !! i,
-          args  
+          args
          }, lets, ald)
     Sort (Type l) -> do
       t' <- reallyUnLevelView l
@@ -754,9 +804,8 @@ toCSpine t bindnames lets ald =
           head = P.prettyShow . qnameName $ conName hd,
           args
         }, lets, ald)
-
 \end{minted}
-\caption{Fonction de conversion des termes en CSpine.}
+\caption{Fonction de conversion des termes en \texttt{CSpine}.}
 \label{fig:agda-toCSpine}
 \end{figure}
 \end{document}
