@@ -266,7 +266,6 @@ et une fonction de $\mathsf{I \times I \times I \to A}$ comme un cube, et ainsi 
 \begin{figure}[htbp]
 \centering
 
-```
 % ============================================================
 % Figure (a) : un terme p : a = b comme un chemin (arête)
 % ============================================================
@@ -1039,36 +1038,36 @@ fe A B f g p i a = { }0
 
 Pour palier ce problème, nous nous servons directement d'une fonctionnalité d'Agda.
 Dans un tel but, Agda calcule les contraintes que nous avons mentionnées et les affiches à l'utilisateur.
-En reprenant l'exemple de la figure \ref{fig:agda-fe}, Agda affiche à l'utilisateur $ (i = i0) \vdash f a$ et $(i = i1) \vdash g a$.
-En l'état, il n'est pas possible de spécifier à Canonical de telle contraintes.
-La solution que nous avons adopté est de replier sur le but les éléments du contexte courant jusqu'à la variable d'interval qui nous interesse et à spécifier les contraintes directement sur la déclaration du goal.
-Le but 0 de la figure \ref{fig:agda-fe} passerais de $(Goal : B)$ à $(Goal : I \to A \to B)$ avec les contraintes $Goal i0 a = f a$ et $Goal i1 a = g a$.
-Pour revenir au but initial, il suffit de redéplier le termes fourni par canonical en se débarassant des abstraction que nous avons ajouté.
+En reprenant l'exemple de la figure \ref{fig:agda-fe}, Agda affiche à l'utilisateur $\mathsf{(i = i0) \vdash f~a}$ et $\mathsf{(i = i1) \vdash g~a}$.
+En l'état, il n'est pas possible de spécifier à Canonical de telles contraintes.
+La solution que nous avons adoptée est de replier sur le but les éléments du contexte courant jusqu'à la variable d'intervalle qui nous intéresse et à spécifier les contraintes directement sur la déclaration du but.
+Le but 0 de la figure \ref{fig:agda-fe} passerais de $\mathsf{(Goal : B)}$ à $\mathsf{(Goal : I \to A \to B)}$ avec les contraintes $\mathsf{Goal~i0~a = f~a}$ et $\mathsf{Goal~i1~a = g~a}$.
+Pour revenir au but initial, il suffit de re-déplier le terme fourni par Canonical en se débarrassant des abstractions que nous avons ajouté.
 
 
 \subsection{La composition homogène avec Canonical}
-Nous avons donc chercher un moyen de fournir à Canonical la possibilité de creer des chemins avec la composition homogène.
-Notre première approche était de fournir a Canonical toute la signature de l'implémentation de cet opérateur dans Agda, 
+Comme mentionné lors de notre présentation des la théorie cubique des types, la composition homogène est un élément central pour la construction d'égalités. 
+Nous souhaitons fournir à Canonical la possibilité de créer des chemins avec la composition homogène.
+Notre première approche était de fournir à Canonical toute la signature de l'implémentation de cet opérateur dans Agda, 
 qui est décrit en section 3.3 et 3.4 de \cite{vezzosi2019cubical}.
 
-\paragraph{Limites de cette approche.}
-Lorsque nous avons tester cette approche pour prouver la transitivité des chemins, 
-Canonical n'a fourni un résultat qu'au bout de plusieurs minutes.
-La cohérence des faces n'était pas respectée dans le résultat qu'il a fourni.
-Cela s'esplique par le fait qu'Agda fasse ses vérifications en interne et pas seulement au niveau du typechecker,
+Nous avons testé cette approche pour prouver la transitivité des chemins et Canonical n'a fourni un résultat qu'au bout de plusieurs minutes.
+De plus, la cohérence des faces n'était pas respectée dans le résultat qu'il a fourni.
+Cela s'explique par le fait qu'Agda fasse ses vérifications en interne et pas seulement au niveau du type-checker,
 la signature seule de l'implémentation n'était donc pas suffisante.
 
 \paragraph{Solution partielle.}
-Pour le moment, nous n'avons pas trouver de moyen pour fournir à Canonical la signature complète de hcomp avec les contraintes de faces.
-Nous avons donc essayer d'utiliser Canonical non plus pour trouver l'entièreté de la solution mais comme aide pour trouver les faces respectant les contraintes.
-Prenons l'exemple en figure \ref{fig:agda-trans}.
-Ici les buts 0 et 1 doivent contenir les faces de gauche et de droite que nous avons décrit en figure \ref{fig:hcomp}.
-En appliquant la technique de repli dont nous avons discuté en section 3.2, 
-nous arrivons a fournir a Canonical toutes les contraintes dont il a besoin et celui-ci fourni un résultat satisfaisant.
+Pour le moment, nous n'avons pas trouvé de moyen de fournir à Canonical la signature complète de \texttt{hcomp}, accompagnée des contraintes sur ses faces.
+Nous avons donc essayé d'utiliser Canonical non plus pour trouver l'intégralité de la solution, 
+mais comme une aide pour déterminer les faces respectant ces contraintes.
+Prenons l'exemple présenté en figure \ref{fig:agda-trans}. 
+Ici, les buts \texttt{0} et \texttt{1} doivent contenir les faces gauche et droite que nous avons décrites en figure \ref{fig:hcomp}.
+En appliquant la technique de repli dont nous avons discuté dans la section 3.2, 
+nous parvenons à fournir à Canonical l'ensemble des contraintes dont il a besoin, et celui-ci fournit alors un résultat satisfaisant.
 
-Par exemple, le goal 1 à comme contraintes $j = i0 \vdash y$ et $j = i1 \vdash z$ et comme type $A$.
-En repliant $j$ sur le goal on obtient comme but $\Pi (j : I) \to A$ avec comme contraintes $Goal i0 = y$ et $Goal i1 = z$.
-On obtient alors de Canonical $q j$.
+Par exemple, le but \texttt{1} à comme contraintes $\mathsf{j = i0 \vdash y}$ et $\mathsf{j = i1 \vdash z}$ et comme type $\mathsf{A}$.
+En repliant $\mathsf{j}$ sur le goal, on obtient comme but $\mathsf{\Pi (j : I) \to A}$ avec comme contraintes $\mathsf{Goal~i0 = y}$ et $\mathsf{Goal~i1 = z}$.
+Canonical nous fourni donc le terme $\mathsf{q~j}$.
 
 \begin{figure}[h]
 \centering
@@ -1083,17 +1082,19 @@ On obtient alors de Canonical $q j$.
 \end{figure}
 
 \paragraph{Limites de l'approche.}
-Bien que cet approche fonctionne pour des cas simples comme celui de la transitivité, 
-celle-ci se retrouve bloquée lorsque les cas deviennent plus complexes.
-Le cas de la transitivité fonctionne bien car fournir tous les arguments au implicite et la face du bas à hcomp permet à Agda 
-de déduire toutes les contraintes pour les faces qu'ils nous manque.
-Cependant, si une contraintes pour une face dépend d'une autre face pas encore spécifié, Agda ne peut pas déduire la contrainte et laisse une méta-variable à la place.
-En figure \ref{fig:agda-hard}, les buts 0 et 1 sont interdépendants et notre approche ne permet pas de l'illuster.
+Bien que cette approche fonctionne pour des cas simples, comme celui de la transitivité, 
+elle se retrouve bloquée lorsque les cas deviennent plus complexes.
+Le cas de la transitivité fonctionne bien, 
+car fournir tous les arguments implicites ainsi que la face inférieure à \texttt{hcomp} 
+permet à Agda de déduire l'ensemble des contraintes correspondant aux faces qui nous manquent.
+Cependant, si la contrainte associée à une face dépend d'une autre face qui n'a pas encore été spécifiée, 
+Agda ne peut pas déduire cette contrainte et laisse une méta-variable à la place.
+En figure \ref{fig:agda-hard}, les buts \texttt{0} et \texttt{1} sont interdépendants, et notre approche ne permet donc pas de traiter ce cas.
 
 \paragraph{Résultats.}
 % L'approche que nous avons présentée au cours de cette section a permis d'automatiser la recherche de plusieurs buts simples.
 La ou Mimer n'était pas en capacité de fournir de preuves utilisant la théorie cubique des types, 
-notre approche a permis d'automatiser plusieurs preuves simples que nous avons présenté durant cette section.
+notre approche a permis d'automatiser plusieurs preuves simples comme celles des buts présent en figures \ref{fig:agda-fe} et \ref{fig:agda-trans}.
 Nous pensons que l'utilisation de Canonical présente un réel potentiel pour l'automatisation de preuves au sein de la théorie cubique des types.
 
 \begin{figure}[h]
