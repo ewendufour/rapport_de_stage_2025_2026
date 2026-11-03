@@ -1,8 +1,13 @@
 \documentclass[11pt]{article}
 
 \usepackage[french]{babel}
-\usepackage[T1]{fontenc}
-\usepackage[utf8]{inputenc}
+\usepackage{iftex}
+\ifXeTeX
+  \usepackage{fontspec}
+\else
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\fi
 \usepackage{fullpage}
 % \usepackage{hyperref}
 \usepackage{amsmath, amssymb}
